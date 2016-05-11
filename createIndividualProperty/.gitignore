@@ -1,0 +1,4 @@
+**/target
+.idea
+*.iml
+**/nifi-createIndividualProperty-processors/src/main/resources
