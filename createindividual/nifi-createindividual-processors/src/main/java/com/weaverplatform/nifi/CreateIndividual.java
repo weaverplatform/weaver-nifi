@@ -21,12 +21,10 @@ import com.weaverplatform.sdk.EntityType;
 import com.weaverplatform.sdk.RelationKeys;
 import com.weaverplatform.sdk.Weaver;
 import org.apache.nifi.annotation.behavior.*;
-import org.apache.nifi.components.ConfigurableComponent;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.PropertyValue;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.*;
-import org.apache.nifi.annotation.lifecycle.OnScheduled;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
@@ -41,8 +39,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @SeeAlso({})
 @ReadsAttributes({@ReadsAttribute(attribute="", description="")})
 @WritesAttributes({@WritesAttribute(attribute="", description="")})
-@DynamicProperty(name = "Relationship Name", value = "Attribute Expression Language", supportsExpressionLanguage = false, description = "blabla")
-public class CreateIndividual extends AbstractProcessor implements ConfigurableComponent {
+public class CreateIndividual extends AbstractProcessor {
 
   public static final PropertyDescriptor WEAVER = new PropertyDescriptor
     .Builder().name("weaver_url")
@@ -58,6 +55,20 @@ public class CreateIndividual extends AbstractProcessor implements ConfigurableC
     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
     .build();
 
+  public static final PropertyDescriptor INDIVIDUAL_ATTRIBUTE = new PropertyDescriptor
+    .Builder().name("individual_attribute")
+    .description("look for a flowfile attribute")
+    .required(false)
+    .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+    .build();
+
+  public static final PropertyDescriptor INDIVIDUAL_STATIC = new PropertyDescriptor
+    .Builder().name("individual_static")
+    .description("if there is no flowfile attribute, use static value")
+    .required(false)
+    .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+    .build();
+
   public static final Relationship ORIGINAL = new Relationship.Builder()
           .name("original")
           .description("Original relationship to transfer content to")
@@ -67,16 +78,14 @@ public class CreateIndividual extends AbstractProcessor implements ConfigurableC
 
   private AtomicReference<Set<Relationship>> relationships = new AtomicReference<>();
 
-  //seperate lists for dynamic properties
-  private volatile Set<String> dynamicPropertyNames = new HashSet<>();
-  private Map<PropertyDescriptor, PropertyValue> propertyMap = new HashMap<>();
-
   @Override
   protected void init(final ProcessorInitializationContext context) {
     //position 0
     final List<PropertyDescriptor> descriptors = new ArrayList<PropertyDescriptor>();
     descriptors.add(WEAVER);
     descriptors.add(RDF_TYPE_STATIC);
+    descriptors.add(INDIVIDUAL_ATTRIBUTE);
+    descriptors.add(INDIVIDUAL_STATIC);
     this.properties = Collections.unmodifiableList(descriptors);
 
     final Set<Relationship> set = new HashSet<>();
@@ -84,125 +93,32 @@ public class CreateIndividual extends AbstractProcessor implements ConfigurableC
     this.relationships = new AtomicReference<>(set);
   }
 
-  /* method required for dynamic property */
-  @Override
-  protected PropertyDescriptor getSupportedDynamicPropertyDescriptor(final String propertyDescriptorName) {
-    //position 1
-    return new PropertyDescriptor.Builder()
-      .required(false)
-      .name(propertyDescriptorName)
-      .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-      .dynamic(true)
-      .expressionLanguageSupported(false)
-      .build();
-  }
-
-  /* method from interface ConfigurableComponent */
-  /*method required for dynamic property */
-  @Override
-  public void onPropertyModified(PropertyDescriptor descriptor, String oldValue, String newValue){
-
-    //position 2
-
-    if(descriptor.isDynamic()){
-
-
-      //------------first we make dynamic properties
-      //System.out.println("@onPropertyModified:: dynamic prop");
-
-      final Set<String> newDynamicPropertyNames = new HashSet<>(dynamicPropertyNames);
-
-      if (oldValue == null) {    // new property
-        //System.out.println("@onPropertyModified::oldValue=NULL");
-        //newDynamicPropertyNames.addAll(this.dynamicPropertyNames);
-        newDynamicPropertyNames.add(descriptor.getName());
-        //dynamicPropertyValues.put(descriptor, newValue);
-      }
-
-      //TODO: what are we going to do with changed values from dynamic attributes?
-
-      this.dynamicPropertyNames = Collections.unmodifiableSet(newDynamicPropertyNames);
-
-
-//      //------------then we make relationships with the dynamic property names
-//      final Set<String> allDynamicProps = this.dynamicPropertyNames;
-//
-//      final Set<Relationship> newRelationships = new HashSet<>();
-//
-//      for (final String propName : allDynamicProps) {
-//        newRelationships.add(new Relationship.Builder().name(propName).build());
-//      }
-//
-//      this.relationships.set(newRelationships);
-
-    }
-
-  }
-
-  /* method required for dynamic property */
-  @OnScheduled
-  public void onScheduled(final ProcessContext context) {
-    //position 3
-
-    //System.out.println("@onScheduled");
-
-    final Map<PropertyDescriptor, PropertyValue> newPropertyMap = new HashMap<>();
-    for (final PropertyDescriptor descriptor : context.getProperties().keySet()) {
-      if (!descriptor.isDynamic()) {
-        continue;
-      }
-      //getLogger().debug("Adding new dynamic property: {}", new Object[]{descriptor});
-      //System.out.println("Adding new dynamic property: {}" + descriptor.toString());
-      newPropertyMap.put(descriptor, context.getProperty(descriptor));
-    }
-
-    this.propertyMap = newPropertyMap;
-  }
-
   @Override
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
-      FlowFile flowFile = session.get();
+
+    FlowFile flowFile = session.get();
 
     if ( flowFile == null ) {
           return;
-      }
-
-    //alleen 1 dynamic attribute
-    //get list of dynamic props
-    final Map<PropertyDescriptor, PropertyValue> propMap = this.propertyMap;
-
-    for(final Map.Entry<PropertyDescriptor, PropertyValue> entry : propMap.entrySet()){
-      if(entry.getKey().getName().equals("individual")){
-
-        //get the attribute specified by the user
-        PropertyValue lookFor = entry.getValue();
-        System.out.println(lookFor.getValue());
-
-        //get the attribute from the flowfile
-        String flowFileAttrValue = flowFile.getAttribute(lookFor.getValue());
-
-        if(flowFileAttrValue != null) {
-
-          //create weaver instance
-          Weaver weaver = new Weaver();
-          String weaverUrl = context.getProperty(WEAVER).getValue();
-          weaver.connect(weaverUrl);
-
-          //create entity by user attribute
-          Entity parentObject = weaver.add(new HashMap<String, Object>(), EntityType.INDIVIDUAL, flowFileAttrValue);
-
-          //object
-          Entity aCollection = weaver.add(new HashMap<String, Object>(), EntityType.COLLECTION, weaver.createRandomUUID());
-
-          //predicate
-          parentObject.linkEntity(RelationKeys.PROPERTIES, aCollection);
-
-          System.out.println("weaver entity done!");
-
-        }
-
-      }
     }
+
+    String weaverUrl = context.getProperty(WEAVER).getValue();
+    String rdf_type_static = context.getProperty(RDF_TYPE_STATIC).getValue();
+    String individual_id = get(context, flowFile, INDIVIDUAL_ATTRIBUTE, INDIVIDUAL_STATIC);
+
+    Weaver weaver = new Weaver();
+    weaver.connect(weaverUrl);
+
+    //create entity by user attribute
+    Entity parentObject = weaver.add(new HashMap<String, Object>(), EntityType.INDIVIDUAL, individual_id);
+
+    //object
+    Map<String, Object> entityAttributes = new HashMap<>();
+    entityAttributes.put("predicate", rdf_type_static);
+    Entity aCollection = weaver.add(entityAttributes, EntityType.COLLECTION, weaver.createRandomUUID());
+
+    //predicate
+    parentObject.linkEntity(RelationKeys.PROPERTIES, aCollection);
 
     session.transfer(flowFile, ORIGINAL);
   }
@@ -215,6 +131,38 @@ public class CreateIndividual extends AbstractProcessor implements ConfigurableC
   @Override
   public final List<PropertyDescriptor> getSupportedPropertyDescriptors() {
     return properties;
+  }
+
+  public boolean isEmpty(PropertyValue propertyValue){
+    String value = propertyValue.getValue();
+    if(value == null || value.length() == 0){
+      return true;
+    }
+    return false;
+  }
+
+  public String get (PropertyValue propertyValue){
+    return propertyValue.getValue();
+  }
+
+  public PropertyValue get (final ProcessContext c, PropertyDescriptor p){
+    return c.getProperty(p);
+  }
+
+  public String get (final ProcessContext c, FlowFile f, PropertyDescriptor a, PropertyDescriptor b){
+
+    boolean useAttribute = !isEmpty(get(c, a));
+    boolean useStatic = !isEmpty(get(c, b));
+
+    if( (useAttribute && useStatic) || (!useAttribute && !useStatic) ){
+      throw new RuntimeException("only " + a.getName() +" or "+b.getName()+" must be set");
+    }
+
+    if(useAttribute){
+      return f.getAttribute(get(get(c, a)));
+    }else{
+      return get(get(c, b));
+    }
   }
 
 }
