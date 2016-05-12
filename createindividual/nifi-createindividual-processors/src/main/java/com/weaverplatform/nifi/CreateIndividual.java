@@ -48,13 +48,6 @@ public class CreateIndividual extends AbstractProcessor {
     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
     .build();
 
-  public static final PropertyDescriptor RDF_TYPE_STATIC = new PropertyDescriptor
-    .Builder().name("rdf-type-static")
-    .description("rdf-type-static")
-    .required(true)
-    .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-    .build();
-
   public static final PropertyDescriptor INDIVIDUAL_ATTRIBUTE = new PropertyDescriptor
     .Builder().name("individual_attribute")
     .description("look for a flowfile attribute")
@@ -83,7 +76,6 @@ public class CreateIndividual extends AbstractProcessor {
     //position 0
     final List<PropertyDescriptor> descriptors = new ArrayList<PropertyDescriptor>();
     descriptors.add(WEAVER);
-    descriptors.add(RDF_TYPE_STATIC);
     descriptors.add(INDIVIDUAL_ATTRIBUTE);
     descriptors.add(INDIVIDUAL_STATIC);
     this.properties = Collections.unmodifiableList(descriptors);
@@ -103,7 +95,6 @@ public class CreateIndividual extends AbstractProcessor {
     }
 
     String weaverUrl = context.getProperty(WEAVER).getValue();
-    String rdf_type_static = context.getProperty(RDF_TYPE_STATIC).getValue();
     String individual_id = get(context, flowFile, INDIVIDUAL_ATTRIBUTE, INDIVIDUAL_STATIC);
 
     Weaver weaver = new Weaver();
@@ -113,9 +104,7 @@ public class CreateIndividual extends AbstractProcessor {
     Entity parentObject = weaver.add(new HashMap<String, Object>(), EntityType.INDIVIDUAL, individual_id);
 
     //object
-    Map<String, Object> entityAttributes = new HashMap<>();
-    entityAttributes.put("predicate", rdf_type_static);
-    Entity aCollection = weaver.add(entityAttributes, EntityType.COLLECTION, weaver.createRandomUUID());
+    Entity aCollection = weaver.add(new HashMap<String, Object>(), EntityType.COLLECTION, weaver.createRandomUUID());
 
     //predicate
     parentObject.linkEntity(RelationKeys.PROPERTIES, aCollection);
