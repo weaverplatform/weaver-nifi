@@ -28,7 +28,6 @@ import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
 import org.apache.nifi.annotation.behavior.WritesAttributes;
-import org.apache.nifi.annotation.lifecycle.OnScheduled;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
@@ -52,6 +51,48 @@ public class CreateIndividualProperty extends AbstractProcessor {
     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
     .build();
 
+  public static final PropertyDescriptor SUBJECT_ATTRIBUTE = new PropertyDescriptor
+    .Builder().name("subject_attribute")
+    .description("look for the flowfile attribute")
+    .required(false)
+    .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+    .build();
+
+  public static final PropertyDescriptor SUBJECT_STATIC = new PropertyDescriptor
+    .Builder().name("subject_static")
+    .description("if there is no flowfile attribute, use static value")
+    .required(false)
+    .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+    .build();
+
+  public static final PropertyDescriptor PREDICATE_ATTRIBUTE = new PropertyDescriptor
+    .Builder().name("predicate_attribute")
+    .description("look for the flowfile attribute")
+    .required(false)
+    .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+    .build();
+
+  public static final PropertyDescriptor PREDICATE_STATIC = new PropertyDescriptor
+    .Builder().name("predicate_static")
+    .description("if there is no flowfile attribute, use static value")
+    .required(false)
+    .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+    .build();
+
+  public static final PropertyDescriptor OBJECT_ATTRIBUTE = new PropertyDescriptor
+    .Builder().name("object_attribute")
+    .description("look for the flowfile attribute")
+    .required(false)
+    .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+    .build();
+
+  public static final PropertyDescriptor OBJECT_STATIC = new PropertyDescriptor
+    .Builder().name("object_static")
+    .description("if there is no flowfile attribute, use static value")
+    .required(false)
+    .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+    .build();
+
   public static final Relationship ORIGINAL = new Relationship.Builder()
     .name("original")
     .description("Original relationship to transfer content to")
@@ -67,8 +108,14 @@ public class CreateIndividualProperty extends AbstractProcessor {
 
   @Override
   protected void init(final ProcessorInitializationContext context) {
-    final List<PropertyDescriptor> descriptors = new ArrayList<PropertyDescriptor>();
+    final List<PropertyDescriptor> descriptors = new ArrayList<>();
     descriptors.add(WEAVER);
+    descriptors.add(SUBJECT_ATTRIBUTE);
+    descriptors.add(SUBJECT_STATIC);
+    descriptors.add(PREDICATE_ATTRIBUTE);
+    descriptors.add(PREDICATE_STATIC);
+    descriptors.add(OBJECT_ATTRIBUTE);
+    descriptors.add(OBJECT_STATIC);
     this.properties = Collections.unmodifiableList(descriptors);
 
     final Set<Relationship> set = new HashSet<Relationship>();
@@ -89,56 +136,6 @@ public class CreateIndividualProperty extends AbstractProcessor {
       .build();
   }
 
-  /* method from interface ConfigurableComponent */
-  /*method required for dynamic property */
-  @Override
-  public void onPropertyModified(PropertyDescriptor descriptor, String oldValue, String newValue){
-
-    //position 2
-
-    if(descriptor.isDynamic()){
-
-
-      //------------first we make dynamic properties
-      //System.out.println("@onPropertyModified:: dynamic prop");
-
-      final Set<String> newDynamicPropertyNames = new HashSet<>(dynamicPropertyNames);
-
-      if (oldValue == null) {    // new property
-        //System.out.println("@onPropertyModified::oldValue=NULL");
-        //newDynamicPropertyNames.addAll(this.dynamicPropertyNames);
-        newDynamicPropertyNames.add(descriptor.getName());
-        //dynamicPropertyValues.put(descriptor, newValue);
-      }
-
-      //TODO: what are we going to do with changed values from dynamic attributes?
-
-      this.dynamicPropertyNames = Collections.unmodifiableSet(newDynamicPropertyNames);
-
-    }
-
-  }
-
-  /* method required for dynamic property */
-  @OnScheduled
-  public void onScheduled(final ProcessContext context) {
-    //position 3
-
-    //System.out.println("@onScheduled");
-
-    final Map<PropertyDescriptor, PropertyValue> newPropertyMap = new HashMap<>();
-    for (final PropertyDescriptor descriptor : context.getProperties().keySet()) {
-      if (!descriptor.isDynamic()) {
-        continue;
-      }
-      //getLogger().debug("Adding new dynamic property: {}", new Object[]{descriptor});
-      //System.out.println("Adding new dynamic property: {}" + descriptor.toString());
-      newPropertyMap.put(descriptor, context.getProperty(descriptor));
-    }
-
-    this.propertyMap = newPropertyMap;
-  }
-
   @Override
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
 
@@ -149,116 +146,46 @@ public class CreateIndividualProperty extends AbstractProcessor {
       return;
     }
 
-    //System.out.println("ik kom hier!");
+    String subject = get(context, flowFile, SUBJECT_ATTRIBUTE, SUBJECT_STATIC); // FunctionPhysicalObject id
+    String predicate = get(context, flowFile, PREDICATE_ATTRIBUTE, PREDICATE_STATIC); // ib:hasGeometry
+    String object = get(context, flowFile, OBJECT_ATTRIBUTE, OBJECT_STATIC); // Geometry_id
 
-    //get flow file attribute id
-    //get flow file attribute name
-    //get static attribute predicate
+    Weaver weaver = new Weaver();
+    String weaverUrl = context.getProperty(WEAVER).getValue();
+    weaver.connect(weaverUrl);
 
-    final Map<PropertyDescriptor, PropertyValue> propMap = this.propertyMap;
+    try {
 
-    AtomicReference<String> subj = new AtomicReference<>();
-    AtomicReference<String> pred = new AtomicReference<>();
-    AtomicReference<String> obj = new AtomicReference<>();
-    boolean subjStored = false;
-    boolean predStored = false;
-    boolean objStored = false;
+      //get the parent object from weaver
+      Entity parent = weaver.get(subject);
 
-    //first, look for the dynamic specified subject (id)
-    for(final Map.Entry<PropertyDescriptor, PropertyValue> entry : propMap.entrySet()){
+      //create child attributes
+      Map<String, Object> entityAttributes = new HashMap<>();
+      entityAttributes.put("predicate", predicate);
 
-      PropertyValue pv = entry.getValue();
+      //create the child entity and fill its attributes
+      Entity child = weaver.add(entityAttributes, EntityType.INDIVIDUAL_PROPERTY, weaver.createRandomUUID());
 
-      if(entry.getKey().getName().equals("subject-attribute")) {
+      //make 2 entity:Individuals
+      //1. link the parent object to the child
+      child.linkEntity(RelationKeys.SUBJECT, parent);
+      //2. create theObject as object and link it to the child
+      Entity theObjChild = weaver.add(new HashMap<String, Object>(), EntityType.INDIVIDUAL, object);
+      child.linkEntity(RelationKeys.OBJECT, theObjChild);
 
-        String subject = pv.getValue();
+      //fetch parent collection
+      Entity aCollection = parent.getRelations().get(RelationKeys.PROPERTIES);
 
-        if (subject != null) {
-          //get the dynamic attribute from the flowfile
-          String ffav = flowFile.getAttribute(subject);
-          if(ffav != null) {
-            //save it
-            subj.set(ffav);
-            subjStored = true;
-            //System.out.println("subj stored");
-          }
-        }
+      //link individual to collection
+      aCollection.linkEntity(child.getId(), child);
 
-      }else if(entry.getKey().getName().equals("predicate-static")) {
 
-        String predicate = pv.getValue();
-
-        if (predicate != null) {
-          //store only
-          pred.set(predicate);
-          predStored = true;
-          //System.out.println("pred stored");
-        }
-
-      }else if(entry.getKey().getName().equals("object-attribute")) {
-
-        String object = pv.getValue();
-
-        if (object != null) {
-          //get its attribute from the flowfile
-          String ffav = flowFile.getAttribute(object);
-          if(ffav != null){
-            //save it
-            obj.set(ffav);
-            objStored = true;
-            //System.out.println("obj stored");
-          }
-        }
-
-      }
-
+    }catch (IndexOutOfBoundsException e) {
+      System.out.println("de node waar naar gezocht moet worden is niet gevonden!");
+    }catch(NullPointerException e){
+      System.out.println("connection error and/or parent object does not exist");
     }
 
-
-    //now we can weaver!
-    if(subjStored && predStored && objStored) {
-
-      Weaver weaver = new Weaver();
-      String weaverUrl = context.getProperty(WEAVER).getValue();
-      weaver.connect(weaverUrl);
-
-      try {
-
-        //get the stored attribute values
-        String theSubject = subj.get(); // FunctionPhysicalObject id
-        String thePredicate = pred.get(); // ib:hasGeometry
-        String theObject = obj.get(); // Geometry_id
-
-
-        //get the parent object from weaver
-        Entity parent = weaver.get(theSubject);
-
-        //create child attributes
-        Map<String, Object> entityAttributes = new HashMap<>();
-        entityAttributes.put("predicate", thePredicate);
-
-        //create the child entity and fill its attributes
-        Entity child = weaver.add(entityAttributes, EntityType.INDIVIDUAL_PROPERTY, weaver.createRandomUUID());
-
-        //make 2 entity:Individuals
-        //1. link the parent object to the child
-        child.linkEntity(RelationKeys.SUBJECT, parent);
-        //2. create theObject as object and link it to the child
-        Entity theObjChild = weaver.add(new HashMap<String, Object>(), EntityType.INDIVIDUAL, theObject);
-        child.linkEntity(RelationKeys.OBJECT, theObjChild);
-
-        //fetch parent collection
-        Entity aCollection = parent.getRelations().get(RelationKeys.PROPERTIES);
-
-        //link individual to collection
-        aCollection.linkEntity(child.getId(), child);
-
-
-      }catch (IndexOutOfBoundsException e) {
-        System.out.println("de node waar naar gezocht moet worden is niet gevonden!");
-      }
-
-    }
 
     session.transfer(flowFile, ORIGINAL);
 
@@ -274,4 +201,37 @@ public class CreateIndividualProperty extends AbstractProcessor {
   public final List<PropertyDescriptor> getSupportedPropertyDescriptors() {
     return properties;
   }
+
+  public boolean isEmpty(PropertyValue propertyValue){
+    String value = propertyValue.getValue();
+    if(value == null || value.length() == 0){
+      return true;
+    }
+    return false;
+  }
+
+  public String get (PropertyValue propertyValue){
+    return propertyValue.getValue();
+  }
+
+  public PropertyValue get (final ProcessContext c, PropertyDescriptor p){
+    return c.getProperty(p);
+  }
+
+  public String get (final ProcessContext c, FlowFile f, PropertyDescriptor a, PropertyDescriptor b){
+
+    boolean useAttribute = !isEmpty(get(c, a));
+    boolean useStatic = !isEmpty(get(c, b));
+
+    if( (useAttribute && useStatic) || (!useAttribute && !useStatic) ){
+      throw new RuntimeException("only " + a.getName() +" or "+b.getName()+" must be set");
+    }
+
+    if(useAttribute){
+      return f.getAttribute(get(get(c, a)));
+    }else{
+      return get(get(c, b));
+    }
+  }
+
 }
