@@ -102,10 +102,6 @@ public class CreateIndividualProperty extends AbstractProcessor {
 
   private AtomicReference<Set<Relationship>> relationships = new AtomicReference<>();
 
-  //seperate lists for dynamic properties
-  private volatile Set<String> dynamicPropertyNames = new HashSet<>();
-  private Map<PropertyDescriptor, PropertyValue> propertyMap = new HashMap<>();
-
   @Override
   protected void init(final ProcessorInitializationContext context) {
     final List<PropertyDescriptor> descriptors = new ArrayList<>();
