@@ -44,7 +44,7 @@ public class CreateValueProperty extends AbstractProcessor{
   public static final PropertyDescriptor WEAVER = new PropertyDescriptor
           .Builder().name("weaver_url")
           .description("weaver connection url i.e. weaver.connect(weaver_url)")
-          .required(false)
+          .required(true)
           .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
           .build();
 
