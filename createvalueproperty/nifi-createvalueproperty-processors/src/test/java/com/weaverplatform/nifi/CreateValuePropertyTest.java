@@ -61,10 +61,9 @@ public class CreateValuePropertyTest {
             //from nifi-envi the user specifies this dynamic attribute, which to look for on the flowfile later
             // Add properties (required)
             testRunner.setProperty(CreateValueProperty.WEAVER, "http://localhost:9487");
-            // Add properties (dynamic)
-            testRunner.setProperty("subject-attribute", "id");
-            testRunner.setProperty("value-attribute", "name");
-            testRunner.setProperty("predicate-static", "rdf:label");
+            testRunner.setProperty(CreateValueProperty.SUBJECT_ATTRIBUTE, "id");
+            testRunner.setProperty(CreateValueProperty.PREDICATE_STATIC, "rdf:label");
+            testRunner.setProperty(CreateValueProperty.OBJECT_ATTRIBUTE, "name");
 
             // Add the flowfile to the runner
             testRunner.enqueue(f);
