@@ -53,6 +53,7 @@ public class GetWeaverIdTest {
         f = session.putAttribute(f, "maximo_id", "80");
 
         testRunner.setProperty(GetWeaverId.ATTRIBUTE, "maximo_id");
+        testRunner.setProperty(GetWeaverId.WEAVER, "http://localhost:9487");
 
         testRunner.enqueue(f);
 

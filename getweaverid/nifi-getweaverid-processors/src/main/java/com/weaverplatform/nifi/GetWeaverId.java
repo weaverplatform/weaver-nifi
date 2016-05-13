@@ -16,6 +16,7 @@
  */
 package com.weaverplatform.nifi;
 
+import com.weaverplatform.sdk.Weaver;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.PropertyValue;
 import org.apache.nifi.flowfile.FlowFile;
@@ -31,6 +32,7 @@ import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 
+import java.io.IOException;
 import java.util.*;
 
 @Tags({"getweaverid"})
@@ -47,6 +49,13 @@ public class GetWeaverId extends AbstractProcessor {
           .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
           .build();
 
+  public static final PropertyDescriptor WEAVER = new PropertyDescriptor
+    .Builder().name("weaver")
+    .description("weaver uri ")
+    .required(true)
+    .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+    .build();
+
   public static final Relationship ORIGINAL = new Relationship.Builder()
           .name("original")
           .description("This relationship is used to transfer the result to.")
@@ -60,6 +69,7 @@ public class GetWeaverId extends AbstractProcessor {
   protected void init(final ProcessorInitializationContext context) {
       final List<PropertyDescriptor> descriptors = new ArrayList<PropertyDescriptor>();
       descriptors.add(ATTRIBUTE);
+      descriptors.add(WEAVER);
       this.descriptors = Collections.unmodifiableList(descriptors);
 
       final Set<Relationship> relationships = new HashSet<Relationship>();
@@ -75,11 +85,6 @@ public class GetWeaverId extends AbstractProcessor {
   @Override
   public final List<PropertyDescriptor> getSupportedPropertyDescriptors() {
       return descriptors;
-  }
-
-  @OnScheduled
-  public void onScheduled(final ProcessContext context) {
-
   }
 
   @Override
@@ -99,7 +104,17 @@ public class GetWeaverId extends AbstractProcessor {
       }
     }
 
+    try{
+
     //do some weaver stuff here
+
+    String weaverUri = context.getProperty(WEAVER).getValue();
+    Weaver weaver = new Weaver();
+    weaver.connect(weaverUri);
+
+    }catch(NullPointerException e){
+      System.out.println("connection error and/or weaver parent object does not exists");
+    }
 
     session.transfer(flowFile, ORIGINAL);
 
