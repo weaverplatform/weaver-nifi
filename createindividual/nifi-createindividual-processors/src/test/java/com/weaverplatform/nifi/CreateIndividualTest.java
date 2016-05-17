@@ -16,13 +16,12 @@
  */
 package com.weaverplatform.nifi;
 
-import com.weaverplatform.sdk.EntityType;
+import com.weaverplatform.sdk.Entity;
 import com.weaverplatform.sdk.Weaver;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessSession;
-import org.apache.nifi.util.MockFlowFile;
 import org.apache.nifi.util.TestRunner;
 import org.apache.nifi.util.TestRunners;
 import org.junit.Before;
@@ -60,15 +59,15 @@ public class CreateIndividualTest {
             ProcessSession session = testRunner.getProcessSessionFactory().createSession();
             FlowFile f = session.create();
             f = session.importFrom(cont, f);
-            f = session.putAttribute(f, "id", "816ee370-4274-e211-a3a8-b8ac6f902f00");
-
-
+            f = session.putAttribute(f, "id", "cio5u54ts00023j6ku6j3j1jg"); //"816ee370-4274-e211-a3a8-b8ac6f902f00");
+//
+//
+            String connectionUrl = "http://weaver.test.ib.weaverplatform.com";
+//
             //from nifi-envi the user specifies this dynamic attribute, which to look for on the flowfile later
             // Add properties (required)
-            testRunner.setProperty(CreateIndividual.WEAVER, "http://localhost:9487");
-            testRunner.setProperty(CreateIndividual.RDF_TYPE_STATIC, "ib:Afsluitboom");
-            // Add properties (dynamic)
-            testRunner.setProperty("individual", "id");
+            testRunner.setProperty(CreateIndividual.WEAVER, connectionUrl);//"http://localhost:9487");
+            testRunner.setProperty(CreateIndividual.INDIVIDUAL_ATTRIBUTE, "id"); // RDF_TYPE_STATIC: ib:Afsluitboom
 
             // Add the flowfile to the runner
             testRunner.enqueue(f);
@@ -76,15 +75,20 @@ public class CreateIndividualTest {
             // Run the enqueued content, it also takes an int = number of contents queued
             testRunner.run();
 
-            //get original flowfile contents
-            List<MockFlowFile> results = testRunner.getFlowFilesForRelationship("original");
-            MockFlowFile result = results.get(0);
-            String resultValue = new String(testRunner.getContentAsByteArray(result));
-            System.out.println(resultValue);
+            Weaver weaver = new Weaver();
+            weaver.connect(connectionUrl);
 
-        }catch(IOException e){
-            System.out.println("FOUT!!");
-            System.out.println(e.getStackTrace());
+            Entity e = weaver.get("cio5u54ts00023j6ku6j3j1jg");
+            System.out.println(e.getId());
+
+//            //get original flowfile contents
+//            List<MockFlowFile> results = testRunner.getFlowFilesForRelationship("original");
+//            MockFlowFile result = results.get(0);
+//            String resultValue = new String(testRunner.getContentAsByteArray(result));
+//            System.out.println(resultValue);
+
+        }catch(Exception e){
+            e.printStackTrace();
         }
     }
 
