@@ -1,8 +1,4 @@
 **/target
 .idea
 *.iml
-**/nifi-createindividual-processors/src/main/resources
-**/nifi-createindividualproperty-processors/src/main/resources
-**/nifi-createindividualvalueproperty-processors/src/main/resources
-**/nifi-getweaverid-processors/src/main/resources
 .DS_Store
