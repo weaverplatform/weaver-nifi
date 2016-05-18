@@ -11,9 +11,9 @@
 
     <modules>
         <module>createindividual</module>
-        <module>createindividualproperty</module>
-        <module>createvalueproperty</module>
-        <module>getweaverid</module>
+        <!--<module>createindividualproperty</module>-->
+        <!--<module>createvalueproperty</module>-->
+        <!--<module>getweaverid</module>-->
     </modules>
 
   <!--http://central.sonatype.org/pages/apache-maven.html-->
@@ -47,16 +47,20 @@
           <target>1.8</target>
         </configuration>
       </plugin>
-      <plugin>
-        <groupId>com.github.maven-nar</groupId>
-        <artifactId>nar-maven-plugin</artifactId>
-        <version>3.1.0</version>
-        <extensions>true</extensions>
-      </plugin>
     </plugins>
   </build>
 
   <dependencies>
+    <!--<dependency>-->
+      <!--<groupId>org.apache.nifi</groupId>-->
+      <!--<artifactId>nifi</artifactId>-->
+      <!--<version>0.6.0</version>-->
+    <!--</dependency>-->
+    <!--<dependency>-->
+      <!--<groupId>org.apache.nifi</groupId>-->
+      <!--<artifactId>nifi-nar-bundles</artifactId>-->
+      <!--<version>0.6.0</version>-->
+    <!--</dependency>-->
     <dependency>
       <groupId>org.apache.nifi</groupId>
       <artifactId>nifi-api</artifactId>
