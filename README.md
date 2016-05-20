@@ -6,7 +6,7 @@ A collection of processors for the NiFi platform for connecting to Weaver.
 ## CreateIndividual
 
 This component allows the user to set the component-property 'individual' to a static value or, if avaible, flowfile attribute value usage.
-The static and attribute value will refer to the _META.id of an Weaver.Entity Object. In conclusion, the component either looks which value to use/retrieve and communicates to the weaver-sdk-java to create a new Weaver Entity (Individual) Object. 
+The static and attribute value will refer to the _META.id of an Weaver.Entity Object. In conclusion, the component either looks which value to use/retrieve and communicates to the weaver-sdk-java to create a new Weaver Entity (Individual) Object, which will further be used as parent to the other processors. 
 
 ## CreateValueProperty
 
