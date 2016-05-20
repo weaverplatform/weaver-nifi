@@ -35,7 +35,7 @@ import org.apache.nifi.processor.util.StandardValidators;
 import java.io.IOException;
 import java.util.*;
 
-@Tags({"getweaverid"})
+@Tags({"weaver, getweaverid"})
 @CapabilityDescription("Looks for a flowfile attribute and fetches a weaver id. Route on Attribute with the new weaver id. Original content untouched.")
 @SeeAlso({})
 @ReadsAttributes({@ReadsAttribute(attribute="", description="")})

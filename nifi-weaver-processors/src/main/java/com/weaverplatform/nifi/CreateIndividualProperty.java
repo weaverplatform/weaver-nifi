@@ -37,7 +37,7 @@ import org.apache.nifi.processor.util.StandardValidators;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
-@Tags({"create,individualproperty"})
+@Tags({"weaver, create,individualproperty"})
 @CapabilityDescription("Creates an individual property")
 @SeeAlso({})
 @ReadsAttributes({@ReadsAttribute(attribute="", description="")})
