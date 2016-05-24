@@ -2,3 +2,4 @@
 .idea
 *.iml
 .DS_Store
+**/nifi-weaver-processors/src/test/resources/*.*
