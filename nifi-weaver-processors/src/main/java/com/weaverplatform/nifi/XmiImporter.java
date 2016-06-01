@@ -127,10 +127,10 @@ public class XmiImporter extends AbstractProcessor {
             xmiID = xmiID.replace("EAID_", "");
             xmiID = xmiID.replace("_", "-");
             xmiID = xmiID.toLowerCase();
-            //System.out.println(xmiID);
+            System.out.println(xmiID);
 
             //make weaver things
-            Entity entity = weaver.add(new HashMap<>(), EntityType.INDIVIDUAL, xmiID);
+            //Entity entity = weaver.add(new HashMap<>(), EntityType.INDIVIDUAL, xmiID);
           }
 
         } catch(IOException e){

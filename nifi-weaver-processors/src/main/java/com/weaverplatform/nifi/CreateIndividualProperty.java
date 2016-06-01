@@ -16,10 +16,7 @@
  */
 package com.weaverplatform.nifi;
 
-import com.weaverplatform.sdk.Entity;
-import com.weaverplatform.sdk.EntityType;
-import com.weaverplatform.sdk.RelationKeys;
-import com.weaverplatform.sdk.Weaver;
+import com.weaverplatform.sdk.*;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.PropertyValue;
 import org.apache.nifi.flowfile.FlowFile;
@@ -170,7 +167,9 @@ public class CreateIndividualProperty extends AbstractProcessor {
       child.linkEntity(RelationKeys.OBJECT, theObjChild);
 
       //fetch parent collection
-      Entity aCollection = parent.getRelations().get(RelationKeys.PROPERTIES);
+      ShallowEntity shallowCollection = parent.getRelations().get(RelationKeys.PROPERTIES);
+
+      Entity aCollection = weaver.get(shallowCollection.getId());
 
       //link individual to collection
       aCollection.linkEntity(child.getId(), child);
