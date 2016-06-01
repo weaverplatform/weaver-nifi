@@ -16,7 +16,12 @@
  */
 package com.weaverplatform.nifi;
 
+import com.jcabi.xml.XML;
+import com.jcabi.xml.XMLDocument;
+import com.weaverplatform.sdk.Entity;
+import com.weaverplatform.sdk.EntityType;
 import com.weaverplatform.sdk.Weaver;
+import org.apache.commons.io.IOUtils;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.PropertyValue;
 import org.apache.nifi.flowfile.FlowFile;
@@ -30,24 +35,24 @@ import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.processor.exception.ProcessException;
+import org.apache.nifi.processor.io.InputStreamCallback;
 import org.apache.nifi.processor.util.StandardValidators;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.NodeList;
 
+import javax.xml.soap.Node;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
-@Tags({"weaver, getweaverid"})
-@CapabilityDescription("Looks for a flowfile attribute and fetches a weaver id. Route on Attribute with the new weaver id. Original content untouched.")
+@Tags({"weaver, xmiImporter"})
+@CapabilityDescription("an xmi importer which communicates with the weaver-sdk-java.")
 @SeeAlso({})
 @ReadsAttributes({@ReadsAttribute(attribute="", description="")})
 @WritesAttributes({@WritesAttribute(attribute="", description="")})
-public class GetWeaverId extends AbstractProcessor {
-
-  public static final PropertyDescriptor ATTRIBUTE = new PropertyDescriptor
-    .Builder().name("Flow file attribute")
-    .description("The name of the flowfile attribute to look for.")
-    .required(true)
-    .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-    .build();
+public class XmiImporter extends AbstractProcessor {
 
   public static final PropertyDescriptor WEAVER = new PropertyDescriptor
     .Builder().name("weaver")
@@ -68,7 +73,6 @@ public class GetWeaverId extends AbstractProcessor {
   @Override
   protected void init(final ProcessorInitializationContext context) {
     final List<PropertyDescriptor> descriptors = new ArrayList<PropertyDescriptor>();
-    descriptors.add(ATTRIBUTE);
     descriptors.add(WEAVER);
     this.descriptors = Collections.unmodifiableList(descriptors);
 
@@ -95,26 +99,52 @@ public class GetWeaverId extends AbstractProcessor {
       return;
     }
 
-    String a = context.getProperty(ATTRIBUTE).getValue();
-    String b = flowFile.getAttribute(a);
 
-    if (b != null){
-      if(b.equals("80")){
-        flowFile = session.putAttribute(flowFile, "weaver_id", "90");
+    session.read(flowFile, new InputStreamCallback() {
+
+      @Override
+      public void process(InputStream isIn) throws IOException {
+
+        try {
+
+          String contents = IOUtils.toString(isIn);
+          contents = contents.replaceAll("UML:", "UML.");
+
+          XML xmlNode = new XMLDocument(contents);
+
+
+          List<XML> list = xmlNode.nodes("//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Class");
+
+          System.out.println(list.size()); //47 classes found
+
+          Weaver weaver = new Weaver();
+          String weaverURI = context.getProperty(WEAVER).getValue();
+          weaver.connect(weaverURI);
+
+          for (XML item : list){
+            org.w3c.dom.Node xmiIdNode = item.node().getAttributes().getNamedItem("xmi.id");
+            String xmiID = xmiIdNode.getTextContent();
+            xmiID = xmiID.replace("EAID_", "");
+            xmiID = xmiID.replace("_", "-");
+            xmiID = xmiID.toLowerCase();
+            System.out.println(xmiID);
+
+            //make weaver things
+            //Entity entity = weaver.add(new HashMap<>(), EntityType.INDIVIDUAL, xmiID);
+          }
+
+        } catch(IOException e){
+          System.out.println("w00t");// + e.getMessage());
+        }catch(IllegalArgumentException e){
+          System.out.println("is xml niet geldig 1?");
+          System.out.println(e.getCause());
+          System.out.println(e.getMessage());
+        }catch(IndexOutOfBoundsException e){
+          System.out.println("bah! de node waar gezocht naar moet worden is niet gevonden!");
+        }
+
       }
-    }
-
-    try{
-
-      //do some weaver stuff here
-
-      String weaverUri = context.getProperty(WEAVER).getValue();
-      Weaver weaver = new Weaver();
-      weaver.connect(weaverUri);
-
-    }catch(NullPointerException e){
-      System.out.println("connection error and/or weaver parent object does not exists");
-    }
+    });
 
     session.transfer(flowFile, ORIGINAL);
 
@@ -122,3 +152,4 @@ public class GetWeaverId extends AbstractProcessor {
 
 
 }
+

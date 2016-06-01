@@ -17,3 +17,4 @@ com.weaverplatform.nifi.CreateIndividualProperty
 com.weaverplatform.nifi.CreateValueProperty
 com.weaverplatform.nifi.GetWeaverId
 com.weaverplatform.nifi.IndividualExists
+com.weaverplatform.nifi.XmiImporter

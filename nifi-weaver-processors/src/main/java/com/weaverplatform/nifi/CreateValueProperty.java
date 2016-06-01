@@ -16,10 +16,7 @@
  */
 package com.weaverplatform.nifi;
 
-import com.weaverplatform.sdk.Entity;
-import com.weaverplatform.sdk.EntityType;
-import com.weaverplatform.sdk.RelationKeys;
-import com.weaverplatform.sdk.Weaver;
+import com.weaverplatform.sdk.*;
 import org.apache.nifi.annotation.behavior.*;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.PropertyValue;
@@ -151,8 +148,9 @@ public class CreateValueProperty extends AbstractProcessor{
       child.linkEntity(RelationKeys.SUBJECT, parent);
 
       //get the collection object from parent
-      Entity aCollection = parent.getRelations().get(RelationKeys.PROPERTIES);
+      ShallowEntity shallowCollection = parent.getRelations().get(RelationKeys.PROPERTIES);
 
+      Entity aCollection = weaver.get(shallowCollection.getId());
       //predicate
       aCollection.linkEntity(child.getId(), child);
 
