@@ -16,3 +16,4 @@ com.weaverplatform.nifi.CreateIndividual
 com.weaverplatform.nifi.CreateIndividualProperty
 com.weaverplatform.nifi.CreateValueProperty
 com.weaverplatform.nifi.GetWeaverId
+com.weaverplatform.nifi.IndividualExists
