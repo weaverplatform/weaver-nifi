@@ -17,17 +17,23 @@
 package com.weaverplatform.nifi;
 
 import com.weaverplatform.sdk.*;
-import org.apache.nifi.annotation.behavior.*;
+import com.weaverplatform.sdk.websocket.WeaverSocket;
+import org.apache.nifi.annotation.behavior.ReadsAttribute;
+import org.apache.nifi.annotation.behavior.ReadsAttributes;
+import org.apache.nifi.annotation.behavior.WritesAttribute;
+import org.apache.nifi.annotation.behavior.WritesAttributes;
+import org.apache.nifi.annotation.documentation.CapabilityDescription;
+import org.apache.nifi.annotation.documentation.SeeAlso;
+import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.PropertyValue;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.*;
-import org.apache.nifi.annotation.documentation.CapabilityDescription;
-import org.apache.nifi.annotation.documentation.SeeAlso;
-import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -128,9 +134,11 @@ public class CreateValueProperty extends AbstractProcessor{
 
     Weaver weaver = new Weaver();
     String weaverUrl = context.getProperty(WEAVER).getValue();
-    weaver.connect(weaverUrl);
+
 
     try {
+
+      weaver.connect(new WeaverSocket(new URI(weaverUrl)));
 
       Entity parent = weaver.get(subject);
 
@@ -154,9 +162,12 @@ public class CreateValueProperty extends AbstractProcessor{
       //predicate
       aCollection.linkEntity(child.getId(), child);
 
-    }catch (IndexOutOfBoundsException e) {
+    } catch (URISyntaxException e) {
+      System.out.println("parsing uri failed");
+      
+    } catch (IndexOutOfBoundsException e) {
       System.out.println("de node waar naar gezocht moet worden is niet gevonden!");
-    }catch (NullPointerException e) {
+    } catch (NullPointerException e) {
       System.out.println("connection error and/or failed to retrieve parent object");
     }
 

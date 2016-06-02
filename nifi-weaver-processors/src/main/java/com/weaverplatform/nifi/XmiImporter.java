@@ -18,34 +18,28 @@ package com.weaverplatform.nifi;
 
 import com.jcabi.xml.XML;
 import com.jcabi.xml.XMLDocument;
-import com.weaverplatform.sdk.Entity;
-import com.weaverplatform.sdk.EntityType;
 import com.weaverplatform.sdk.Weaver;
+import com.weaverplatform.sdk.websocket.WeaverSocket;
 import org.apache.commons.io.IOUtils;
-import org.apache.nifi.components.PropertyDescriptor;
-import org.apache.nifi.components.PropertyValue;
-import org.apache.nifi.flowfile.FlowFile;
-import org.apache.nifi.processor.*;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
 import org.apache.nifi.annotation.behavior.WritesAttributes;
-import org.apache.nifi.annotation.lifecycle.OnScheduled;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
+import org.apache.nifi.components.PropertyDescriptor;
+import org.apache.nifi.flowfile.FlowFile;
+import org.apache.nifi.processor.*;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.io.InputStreamCallback;
 import org.apache.nifi.processor.util.StandardValidators;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.NodeList;
 
-import javax.xml.soap.Node;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 @Tags({"weaver, xmiImporter"})
 @CapabilityDescription("an xmi importer which communicates with the weaver-sdk-java.")
@@ -119,7 +113,7 @@ public class XmiImporter extends AbstractProcessor {
 
           Weaver weaver = new Weaver();
           String weaverURI = context.getProperty(WEAVER).getValue();
-          weaver.connect(weaverURI);
+          weaver.connect(new WeaverSocket(new URI(weaverURI)));
 
           for (XML item : list){
             org.w3c.dom.Node xmiIdNode = item.node().getAttributes().getNamedItem("xmi.id");
@@ -141,6 +135,8 @@ public class XmiImporter extends AbstractProcessor {
           System.out.println(e.getMessage());
         }catch(IndexOutOfBoundsException e){
           System.out.println("bah! de node waar gezocht naar moet worden is niet gevonden!");
+        } catch (URISyntaxException e) {
+          System.out.println(e.getMessage());
         }
 
       }

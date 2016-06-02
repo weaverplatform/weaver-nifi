@@ -17,22 +17,22 @@
 package com.weaverplatform.nifi;
 
 import com.weaverplatform.sdk.Weaver;
-import org.apache.nifi.components.PropertyDescriptor;
-import org.apache.nifi.components.PropertyValue;
-import org.apache.nifi.flowfile.FlowFile;
-import org.apache.nifi.processor.*;
+import com.weaverplatform.sdk.websocket.WeaverSocket;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
 import org.apache.nifi.annotation.behavior.WritesAttributes;
-import org.apache.nifi.annotation.lifecycle.OnScheduled;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
+import org.apache.nifi.components.PropertyDescriptor;
+import org.apache.nifi.flowfile.FlowFile;
+import org.apache.nifi.processor.*;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 
-import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 
 @Tags({"weaver, getweaverid"})
@@ -110,10 +110,12 @@ public class GetWeaverId extends AbstractProcessor {
 
       String weaverUri = context.getProperty(WEAVER).getValue();
       Weaver weaver = new Weaver();
-      weaver.connect(weaverUri);
+      weaver.connect(new WeaverSocket(new URI(weaverUri)));
 
     }catch(NullPointerException e){
       System.out.println("connection error and/or weaver parent object does not exists");
+    } catch (URISyntaxException e) {
+      System.out.println(e.getMessage());
     }
 
     session.transfer(flowFile, ORIGINAL);

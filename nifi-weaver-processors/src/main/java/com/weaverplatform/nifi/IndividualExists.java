@@ -17,6 +17,7 @@
 package com.weaverplatform.nifi;
 
 import com.weaverplatform.sdk.Weaver;
+import com.weaverplatform.sdk.websocket.WeaverSocket;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
@@ -30,6 +31,8 @@ import org.apache.nifi.processor.*;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -96,7 +99,11 @@ public class IndividualExists extends AbstractProcessor {
     System.out.println("ID IS:" + individual_id);
     
     Weaver weaver = new Weaver();
-    weaver.connect(weaverUrl);
+    try {
+      weaver.connect(new WeaverSocket(new URI(weaverUrl)));
+    } catch (URISyntaxException e) {
+      System.out.println(e.getMessage());
+    }
 
     session.transfer(flowFile, EXISTS);
   }

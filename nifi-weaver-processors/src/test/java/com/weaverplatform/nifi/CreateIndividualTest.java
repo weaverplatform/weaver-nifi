@@ -18,6 +18,7 @@ package com.weaverplatform.nifi;
 
 import com.weaverplatform.sdk.Entity;
 import com.weaverplatform.sdk.Weaver;
+import com.weaverplatform.sdk.websocket.WeaverSocket;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.nifi.flowfile.FlowFile;
@@ -29,11 +30,8 @@ import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
-
-import static org.junit.Assert.assertTrue;
+import java.net.URI;
 
 
 public class CreateIndividualTest {
@@ -76,7 +74,7 @@ public class CreateIndividualTest {
             testRunner.run();
 
             Weaver weaver = new Weaver();
-            weaver.connect(connectionUrl);
+            weaver.connect(new WeaverSocket(new URI(connectionUrl)));
 
             Entity e = weaver.get("cio5u54ts00023j6ku6j3j1jg");
             System.out.println(e.getId());

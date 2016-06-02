@@ -17,6 +17,7 @@
 package com.weaverplatform.nifi;
 
 import com.weaverplatform.sdk.*;
+import com.weaverplatform.sdk.websocket.WeaverSocket;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.PropertyValue;
 import org.apache.nifi.flowfile.FlowFile;
@@ -31,6 +32,8 @@ import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -145,7 +148,11 @@ public class CreateIndividualProperty extends AbstractProcessor {
 
     Weaver weaver = new Weaver();
     String weaverUrl = context.getProperty(WEAVER).getValue();
-    weaver.connect(weaverUrl);
+    try {
+      weaver.connect(new WeaverSocket(new URI(weaverUrl)));
+    } catch (URISyntaxException e) {
+      System.out.println(e.getMessage());
+    }
 
     try {
 

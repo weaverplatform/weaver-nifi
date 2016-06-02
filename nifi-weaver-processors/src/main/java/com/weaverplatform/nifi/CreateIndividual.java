@@ -20,6 +20,7 @@ import com.weaverplatform.sdk.Entity;
 import com.weaverplatform.sdk.EntityType;
 import com.weaverplatform.sdk.RelationKeys;
 import com.weaverplatform.sdk.Weaver;
+import com.weaverplatform.sdk.websocket.WeaverSocket;
 import org.apache.nifi.annotation.behavior.*;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.PropertyValue;
@@ -31,6 +32,8 @@ import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -98,7 +101,11 @@ public class CreateIndividual extends AbstractProcessor {
     String individual_id = get(context, flowFile, INDIVIDUAL_ATTRIBUTE, INDIVIDUAL_STATIC);
 
     Weaver weaver = new Weaver();
-    weaver.connect(weaverUrl);
+    try {
+      weaver.connect(new WeaverSocket(new URI(weaverUrl)));
+    } catch (URISyntaxException e) {
+      System.out.println(e.getMessage());
+    }
 
     //create entity by user attribute
     Entity parentObject = weaver.add(new HashMap<String, Object>(), EntityType.INDIVIDUAL, individual_id);
