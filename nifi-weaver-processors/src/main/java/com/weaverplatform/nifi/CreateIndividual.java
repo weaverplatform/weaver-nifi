@@ -16,21 +16,26 @@
  */
 package com.weaverplatform.nifi;
 
+import com.weaverplatform.nifi.util.WeaverProperties;
 import com.weaverplatform.sdk.Entity;
 import com.weaverplatform.sdk.EntityType;
 import com.weaverplatform.sdk.RelationKeys;
 import com.weaverplatform.sdk.Weaver;
 import com.weaverplatform.sdk.websocket.WeaverSocket;
-import org.apache.nifi.annotation.behavior.*;
+import org.apache.nifi.annotation.behavior.ReadsAttribute;
+import org.apache.nifi.annotation.behavior.ReadsAttributes;
+import org.apache.nifi.annotation.behavior.WritesAttribute;
+import org.apache.nifi.annotation.behavior.WritesAttributes;
+import org.apache.nifi.annotation.documentation.CapabilityDescription;
+import org.apache.nifi.annotation.documentation.SeeAlso;
+import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.PropertyValue;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.*;
-import org.apache.nifi.annotation.documentation.CapabilityDescription;
-import org.apache.nifi.annotation.documentation.SeeAlso;
-import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
+import org.apache.nifi.util.NiFiProperties;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -47,13 +52,27 @@ public class CreateIndividual extends AbstractProcessor {
   public static final PropertyDescriptor WEAVER = new PropertyDescriptor
     .Builder().name("weaver_url")
     .description("weaver connection url i.e. weaver.connect(weaver_url)")
-    .required(true)
+    .required(false)
+    .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+    .build();
+  
+  public static final PropertyDescriptor DATASET = new PropertyDescriptor
+    .Builder().name("dataset_id")
+    .description("Dataset ID to add individuals to")
+    .required(false)
     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
     .build();
 
   public static final PropertyDescriptor INDIVIDUAL_ATTRIBUTE = new PropertyDescriptor
     .Builder().name("individual_attribute")
     .description("look for a flowfile attribute")
+    .required(false)
+    .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+    .build();
+  
+  public static final PropertyDescriptor NAME_ATTRIBUTE = new PropertyDescriptor
+    .Builder().name("name_attribute")
+    .description("look for a flowfile attribute to set the name")
     .required(false)
     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
     .build();
@@ -74,13 +93,18 @@ public class CreateIndividual extends AbstractProcessor {
 
   private AtomicReference<Set<Relationship>> relationships = new AtomicReference<>();
 
+  private String weaverUrl;
+  private String datasetId;
+  
   @Override
   protected void init(final ProcessorInitializationContext context) {
     //position 0
     final List<PropertyDescriptor> descriptors = new ArrayList<PropertyDescriptor>();
     descriptors.add(WEAVER);
+    descriptors.add(DATASET);
     descriptors.add(INDIVIDUAL_ATTRIBUTE);
     descriptors.add(INDIVIDUAL_STATIC);
+    descriptors.add(NAME_ATTRIBUTE);
     this.properties = Collections.unmodifiableList(descriptors);
 
     final Set<Relationship> set = new HashSet<>();
@@ -96,8 +120,23 @@ public class CreateIndividual extends AbstractProcessor {
     if ( flowFile == null ) {
           return;
     }
-
-    String weaverUrl = context.getProperty(WEAVER).getValue();
+    
+    // Weaver URL
+    if(context.getProperty(WEAVER).getValue() != null) {
+      weaverUrl = context.getProperty(WEAVER).getValue();
+    }
+    else {
+      weaverUrl = NiFiProperties.getInstance().get(WeaverProperties.URL).toString();
+    }
+    
+    // Dataset
+    if(context.getProperty(DATASET).getValue() != null) {
+      datasetId = context.getProperty(DATASET).getValue();
+    }
+    else {
+      datasetId = NiFiProperties.getInstance().get(WeaverProperties.DATASET).toString();
+    }    
+    
     String individual_id = get(context, flowFile, INDIVIDUAL_ATTRIBUTE, INDIVIDUAL_STATIC);
 
     Weaver weaver = new Weaver();
@@ -106,10 +145,30 @@ public class CreateIndividual extends AbstractProcessor {
     } catch (URISyntaxException e) {
       System.out.println(e.getMessage());
     }
+    
+    // Get Dataset Entity
+    Entity dataset = weaver.get(datasetId);
+    
+    // create entity by user attribute
+    // individual_id = UUID.randomUUID().toString();
+    Map<String, Object> attributes = new HashMap<>();
+    attributes.put("name", "Unnamed");
 
-    //create entity by user attribute
-    Entity parentObject = weaver.add(new HashMap<String, Object>(), EntityType.INDIVIDUAL, individual_id);
-
+    // Check for name
+    String nameAttribute = context.getProperty(NAME_ATTRIBUTE).getValue();
+    if(nameAttribute != null) {
+      String name = flowFile.getAttribute(nameAttribute);
+      if (name != null) {
+        attributes.put("name", name);
+      }
+    }
+    
+    Entity parentObject = weaver.add(attributes, EntityType.INDIVIDUAL, individual_id);
+    
+    // Attach to dataset
+    Entity objects = weaver.get(dataset.getRelations().get("objects").getId());
+    objects.linkEntity(individual_id, parentObject);
+    
     //object
     Entity aCollection = weaver.add(new HashMap<String, Object>(), EntityType.COLLECTION, weaver.createRandomUUID());
 
