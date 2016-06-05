@@ -32,6 +32,8 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
 import java.net.URI;
+import java.util.Properties;
+import java.util.UUID;
 
 
 public class CreateIndividualTest {
@@ -43,6 +45,29 @@ public class CreateIndividualTest {
         testRunner = TestRunners.newTestRunner(CreateIndividual.class);
     }
 
+    @Test
+    public void testIndividualCreationWithName(){
+        Properties props = System.getProperties();
+        props.setProperty("nifi.properties.file.path", "/Users/mohamad/Dev/Coentunnel Backbone/nifi-0.6.1/./conf/nifi.properties");
+
+        InputStream cont = new ByteArrayInputStream("Test".getBytes());
+        
+        ProcessSession session = testRunner.getProcessSessionFactory().createSession();
+        FlowFile flowFile = session.create();
+        flowFile = session.importFrom(cont, flowFile);
+        flowFile = session.putAttribute(flowFile, "id", UUID.randomUUID().toString());
+        flowFile = session.putAttribute(flowFile, "name", "Name is set");
+
+        testRunner.setProperty(CreateIndividual.INDIVIDUAL_ATTRIBUTE, "id");
+        testRunner.setProperty(CreateIndividual.NAME_ATTRIBUTE, "name");
+
+        // Add the flowfile to the runner
+        testRunner.enqueue(flowFile);
+
+        // Run the enqueued content, it also takes an int = number of contents queued
+        testRunner.run();
+    }
+    
     @Test
     public void testOnTrigger(){
 
