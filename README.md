@@ -21,3 +21,12 @@ This processor fetches a weaver id and outputs it (if found) as attribute 'weave
 
 ## Default
 All processors have a static component-property called 'weaver_url' which is used to connect to a weaver instance.
+
+
+# Properties
+
+These properties can be placed in the nifi.properties file in the conf directory
+```
+weaver.url=http://192.168.99.100:9487
+weaver.global.dataset=dataset0
+```
