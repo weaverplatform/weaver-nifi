@@ -16,6 +16,7 @@
  */
 package com.weaverplatform.nifi;
 
+import com.weaverplatform.nifi.util.WeaverProperties;
 import com.weaverplatform.sdk.Weaver;
 import com.weaverplatform.sdk.websocket.WeaverSocket;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
@@ -30,6 +31,7 @@ import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.*;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
+import org.apache.nifi.util.NiFiProperties;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -37,16 +39,15 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Tags({"weaver, individual, exists"})
-@CapabilityDescription("Tests whether an individual exists")
 @SeeAlso({})
 @ReadsAttributes({@ReadsAttribute(attribute="", description="")})
 @WritesAttributes({@WritesAttribute(attribute="", description="")})
 public class IndividualExists extends AbstractProcessor {
-
+  
   public static final PropertyDescriptor WEAVER = new PropertyDescriptor
     .Builder().name("weaver_url")
     .description("weaver connection url i.e. weaver.connect(weaver_url)")
-    .required(true)
+    .required(false)
     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
     .build();
 
@@ -71,6 +72,8 @@ public class IndividualExists extends AbstractProcessor {
 
   private AtomicReference<Set<Relationship>> relationships = new AtomicReference<>();
 
+  private String weaverUrl;
+  
   @Override
   protected void init(final ProcessorInitializationContext context) {
     final List<PropertyDescriptor> descriptors = new ArrayList<>();
@@ -93,10 +96,16 @@ public class IndividualExists extends AbstractProcessor {
       return;
     }
 
-    String weaverUrl     = context.getProperty(WEAVER).getValue();
+    if(context.getProperty(WEAVER) != null) {
+      weaverUrl = context.getProperty(WEAVER).getValue();
+    }
+    else {
+      weaverUrl = NiFiProperties.getInstance().get(WeaverProperties.URL).toString(); 
+    }
+    
     String individual_id = context.getProperty(ID_ATTRIBUTE).getValue();
-
-    System.out.println("ID IS:" + individual_id);
+    
+    getLogger().info("Individual ID is: " + individual_id);
     
     Weaver weaver = new Weaver();
     try {
