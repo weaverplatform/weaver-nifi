@@ -16,6 +16,7 @@
  */
 package com.weaverplatform.nifi;
 
+import com.weaverplatform.nifi.individual.CreateValueProperty;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.nifi.flowfile.FlowFile;

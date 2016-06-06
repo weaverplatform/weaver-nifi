@@ -14,9 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.weaverplatform.nifi;
+package com.weaverplatform.nifi.individual;
 
-import com.weaverplatform.nifi.util.WeaverProperties;
 import com.weaverplatform.sdk.Entity;
 import com.weaverplatform.sdk.EntityType;
 import com.weaverplatform.sdk.RelationKeys;
@@ -32,10 +31,12 @@ import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.PropertyValue;
 import org.apache.nifi.flowfile.FlowFile;
-import org.apache.nifi.processor.*;
+import org.apache.nifi.processor.ProcessContext;
+import org.apache.nifi.processor.ProcessSession;
+import org.apache.nifi.processor.ProcessorInitializationContext;
+import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
-import org.apache.nifi.util.NiFiProperties;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -47,21 +48,11 @@ import java.util.concurrent.atomic.AtomicReference;
 @SeeAlso({})
 @ReadsAttributes({@ReadsAttribute(attribute="", description="")})
 @WritesAttributes({@WritesAttribute(attribute="", description="")})
-public class CreateIndividual extends AbstractProcessor {
+public class CreateIndividual extends IndividualProcessor {
 
-  public static final PropertyDescriptor WEAVER = new PropertyDescriptor
-    .Builder().name("weaver_url")
-    .description("weaver connection url i.e. weaver.connect(weaver_url)")
-    .required(false)
-    .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-    .build();
-  
-  public static final PropertyDescriptor DATASET = new PropertyDescriptor
-    .Builder().name("dataset_id")
-    .description("Dataset ID to add individuals to")
-    .required(false)
-    .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-    .build();
+
+
+
 
   public static final PropertyDescriptor INDIVIDUAL_ATTRIBUTE = new PropertyDescriptor
     .Builder().name("individual_attribute")
@@ -93,11 +84,12 @@ public class CreateIndividual extends AbstractProcessor {
 
   private AtomicReference<Set<Relationship>> relationships = new AtomicReference<>();
 
-  private String weaverUrl;
-  private String datasetId;
+
+  
   
   @Override
   protected void init(final ProcessorInitializationContext context) {
+    
     //position 0
     final List<PropertyDescriptor> descriptors = new ArrayList<PropertyDescriptor>();
     descriptors.add(WEAVER);
@@ -114,28 +106,15 @@ public class CreateIndividual extends AbstractProcessor {
 
   @Override
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
+    
+    super.onTrigger(context, session);
 
     FlowFile flowFile = session.get();
 
     if ( flowFile == null ) {
           return;
     }
-    
-    // Weaver URL
-    if(context.getProperty(WEAVER).getValue() != null) {
-      weaverUrl = context.getProperty(WEAVER).getValue();
-    }
-    else {
-      weaverUrl = NiFiProperties.getInstance().get(WeaverProperties.URL).toString();
-    }
-    
-    // Dataset
-    if(context.getProperty(DATASET).getValue() != null) {
-      datasetId = context.getProperty(DATASET).getValue();
-    }
-    else {
-      datasetId = NiFiProperties.getInstance().get(WeaverProperties.DATASET).toString();
-    }    
+        
     
     String individual_id = get(context, flowFile, INDIVIDUAL_ATTRIBUTE, INDIVIDUAL_STATIC);
 

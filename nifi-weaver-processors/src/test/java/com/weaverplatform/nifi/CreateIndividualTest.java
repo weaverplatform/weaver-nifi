@@ -16,6 +16,7 @@
  */
 package com.weaverplatform.nifi;
 
+import com.weaverplatform.nifi.individual.CreateIndividual;
 import com.weaverplatform.sdk.Entity;
 import com.weaverplatform.sdk.Weaver;
 import com.weaverplatform.sdk.websocket.WeaverSocket;

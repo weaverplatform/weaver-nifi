@@ -16,6 +16,7 @@
  */
 package com.weaverplatform.nifi;
 
+import com.weaverplatform.nifi.individual.CreateIndividualProperty;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.nifi.flowfile.FlowFile;
@@ -31,8 +32,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-
-import org.apache.commons.io.FileUtils;
 
 
 public class CreateIndividualPropertyTest {

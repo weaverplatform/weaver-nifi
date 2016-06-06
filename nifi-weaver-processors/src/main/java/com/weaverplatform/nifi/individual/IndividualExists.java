@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.weaverplatform.nifi;
+package com.weaverplatform.nifi.individual;
 
 import com.weaverplatform.nifi.util.WeaverProperties;
 import com.weaverplatform.sdk.Weaver;
@@ -23,7 +23,6 @@ import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
 import org.apache.nifi.annotation.behavior.WritesAttributes;
-import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.components.PropertyDescriptor;
@@ -42,14 +41,9 @@ import java.util.concurrent.atomic.AtomicReference;
 @SeeAlso({})
 @ReadsAttributes({@ReadsAttribute(attribute="", description="")})
 @WritesAttributes({@WritesAttribute(attribute="", description="")})
-public class IndividualExists extends AbstractProcessor {
+public class IndividualExists extends IndividualProcessor {
   
-  public static final PropertyDescriptor WEAVER = new PropertyDescriptor
-    .Builder().name("weaver_url")
-    .description("weaver connection url i.e. weaver.connect(weaver_url)")
-    .required(false)
-    .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-    .build();
+
 
   public static final PropertyDescriptor ID_ATTRIBUTE = new PropertyDescriptor
     .Builder().name("id_attribute")
@@ -95,6 +89,8 @@ public class IndividualExists extends AbstractProcessor {
     if (flowFile == null) {
       return;
     }
+
+    initIndividualProcessor(context);
 
     if(context.getProperty(WEAVER) != null) {
       weaverUrl = context.getProperty(WEAVER).getValue();

@@ -14,14 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.weaverplatform.nifi;
+package com.weaverplatform.nifi.individual;
 
 import com.weaverplatform.sdk.*;
 import com.weaverplatform.sdk.websocket.WeaverSocket;
-import org.apache.nifi.components.PropertyDescriptor;
-import org.apache.nifi.components.PropertyValue;
-import org.apache.nifi.flowfile.FlowFile;
-import org.apache.nifi.processor.*;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
@@ -29,6 +25,10 @@ import org.apache.nifi.annotation.behavior.WritesAttributes;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
+import org.apache.nifi.components.PropertyDescriptor;
+import org.apache.nifi.components.PropertyValue;
+import org.apache.nifi.flowfile.FlowFile;
+import org.apache.nifi.processor.*;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 
@@ -37,19 +37,14 @@ import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
-@Tags({"weaver, create,individualproperty"})
-@CapabilityDescription("Creates an individual property")
+@Tags({"create, valueproperty, weaver"})
+@CapabilityDescription("Creates a valueproperty object")
 @SeeAlso({})
 @ReadsAttributes({@ReadsAttribute(attribute="", description="")})
 @WritesAttributes({@WritesAttribute(attribute="", description="")})
-public class CreateIndividualProperty extends AbstractProcessor {
+public class CreateValueProperty extends IndividualProcessor {
 
-  public static final PropertyDescriptor WEAVER = new PropertyDescriptor
-    .Builder().name("weaver_url")
-    .description("weaver connection url i.e. weaver.connect(weaver_url)")
-    .required(true)
-    .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-    .build();
+
 
   public static final PropertyDescriptor SUBJECT_ATTRIBUTE = new PropertyDescriptor
     .Builder().name("subject_attribute")
@@ -104,32 +99,19 @@ public class CreateIndividualProperty extends AbstractProcessor {
 
   @Override
   protected void init(final ProcessorInitializationContext context) {
-    final List<PropertyDescriptor> descriptors = new ArrayList<>();
-    descriptors.add(WEAVER);
-    descriptors.add(SUBJECT_ATTRIBUTE);
-    descriptors.add(SUBJECT_STATIC);
-    descriptors.add(PREDICATE_ATTRIBUTE);
-    descriptors.add(PREDICATE_STATIC);
-    descriptors.add(OBJECT_ATTRIBUTE);
-    descriptors.add(OBJECT_STATIC);
-    this.properties = Collections.unmodifiableList(descriptors);
+      final List<PropertyDescriptor> descriptors = new ArrayList<PropertyDescriptor>();
+      descriptors.add(WEAVER);
+      descriptors.add(SUBJECT_ATTRIBUTE);
+      descriptors.add(SUBJECT_STATIC);
+      descriptors.add(PREDICATE_ATTRIBUTE);
+      descriptors.add(PREDICATE_STATIC);
+      descriptors.add(OBJECT_ATTRIBUTE);
+      descriptors.add(OBJECT_STATIC);
+      this.properties = Collections.unmodifiableList(descriptors);
 
-    final Set<Relationship> set = new HashSet<Relationship>();
-    set.add(ORIGINAL);
-    this.relationships = new AtomicReference<>(set);
-  }
-
-  /* method required for dynamic property */
-  @Override
-  protected PropertyDescriptor getSupportedDynamicPropertyDescriptor(final String propertyDescriptorName) {
-    //position 1
-    return new PropertyDescriptor.Builder()
-      .required(false)
-      .name(propertyDescriptorName)
-      .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-      .dynamic(true)
-      .expressionLanguageSupported(false)
-      .build();
+      final Set<Relationship> set = new HashSet<Relationship>();
+      set.add(ORIGINAL);
+      this.relationships = new AtomicReference<>(set);
   }
 
   @Override
@@ -138,59 +120,55 @@ public class CreateIndividualProperty extends AbstractProcessor {
     FlowFile flowFile = session.get();
 
     if ( flowFile == null ) {
-      //System.out.println("no flowfile");
       return;
     }
 
-    String subject = get(context, flowFile, SUBJECT_ATTRIBUTE, SUBJECT_STATIC); // FunctionPhysicalObject id
-    String predicate = get(context, flowFile, PREDICATE_ATTRIBUTE, PREDICATE_STATIC); // ib:hasGeometry
-    String object = get(context, flowFile, OBJECT_ATTRIBUTE, OBJECT_STATIC); // Geometry_id
+    initIndividualProcessor(context);
+
+    String subject = get(context, flowFile, SUBJECT_ATTRIBUTE, SUBJECT_STATIC);
+    String predicate = get(context, flowFile, PREDICATE_ATTRIBUTE, PREDICATE_STATIC);
+    String object = get(context, flowFile, OBJECT_ATTRIBUTE, OBJECT_STATIC);
 
     Weaver weaver = new Weaver();
     String weaverUrl = context.getProperty(WEAVER).getValue();
+
+
     try {
+
       weaver.connect(new WeaverSocket(new URI(weaverUrl)));
-    } catch (URISyntaxException e) {
-      System.out.println(e.getMessage());
-    }
 
-    try {
-
-      //get the parent object from weaver
       Entity parent = weaver.get(subject);
 
-      //create child attributes
+      //value of object
+      //create an entity attributes-list
       Map<String, Object> entityAttributes = new HashMap<>();
       entityAttributes.put("predicate", predicate);
+      entityAttributes.put("object", object);
 
-      //create the child entity and fill its attributes
-      Entity child = weaver.add(entityAttributes, EntityType.INDIVIDUAL_PROPERTY, weaver.createRandomUUID());
+      //System.out.println("....attributes { " + firstAttributeKey + " : " + firstAttributeValue + ", " + predicateKey + " : " + predicateValue + "}");
 
-      //make 2 entity:Individuals
-      //1. link the parent object to the child
+      //object
+      Entity child = weaver.add(entityAttributes, EntityType.VALUE_PROPERTY, weaver.createRandomUUID());
+      //we link the parents as subject
       child.linkEntity(RelationKeys.SUBJECT, parent);
-      //2. create theObject as object and link it to the child
-      Entity theObjChild = weaver.add(new HashMap<String, Object>(), EntityType.INDIVIDUAL, object);
-      child.linkEntity(RelationKeys.OBJECT, theObjChild);
 
-      //fetch parent collection
+      //get the collection object from parent
       ShallowEntity shallowCollection = parent.getRelations().get(RelationKeys.PROPERTIES);
 
       Entity aCollection = weaver.get(shallowCollection.getId());
-
-      //link individual to collection
+      //predicate
       aCollection.linkEntity(child.getId(), child);
 
-
-    }catch (IndexOutOfBoundsException e) {
+    } catch (URISyntaxException e) {
+      System.out.println("parsing uri failed");
+      
+    } catch (IndexOutOfBoundsException e) {
       System.out.println("de node waar naar gezocht moet worden is niet gevonden!");
-    }catch(NullPointerException e){
-      System.out.println("connection error and/or parent object does not exist");
+    } catch (NullPointerException e) {
+      System.out.println("connection error and/or failed to retrieve parent object");
     }
 
-
     session.transfer(flowFile, ORIGINAL);
-
 
   }
 
