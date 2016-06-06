@@ -99,8 +99,8 @@ public class CreateIndividualProperty extends IndividualProcessor {
 
   @Override
   protected void init(final ProcessorInitializationContext context) {
-    final List<PropertyDescriptor> descriptors = new ArrayList<>();
-    descriptors.add(WEAVER);
+
+
     descriptors.add(SUBJECT_ATTRIBUTE);
     descriptors.add(SUBJECT_STATIC);
     descriptors.add(PREDICATE_ATTRIBUTE);
@@ -109,9 +109,9 @@ public class CreateIndividualProperty extends IndividualProcessor {
     descriptors.add(OBJECT_STATIC);
     this.properties = Collections.unmodifiableList(descriptors);
 
-    final Set<Relationship> set = new HashSet<Relationship>();
-    set.add(ORIGINAL);
-    this.relationships = new AtomicReference<>(set);
+
+    relationshipSet.add(ORIGINAL);
+    this.relationships = new AtomicReference<>(relationshipSet);
   }
 
   /* method required for dynamic property */
@@ -130,14 +130,14 @@ public class CreateIndividualProperty extends IndividualProcessor {
   @Override
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
 
+    super.onTrigger(context, session);
+
     FlowFile flowFile = session.get();
 
     if ( flowFile == null ) {
       //System.out.println("no flowfile");
       return;
     }
-
-    initIndividualProcessor(context);
 
     String subject = get(context, flowFile, SUBJECT_ATTRIBUTE, SUBJECT_STATIC); // FunctionPhysicalObject id
     String predicate = get(context, flowFile, PREDICATE_ATTRIBUTE, PREDICATE_STATIC); // ib:hasGeometry

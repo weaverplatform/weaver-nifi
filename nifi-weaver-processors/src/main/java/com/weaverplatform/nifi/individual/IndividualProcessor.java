@@ -5,9 +5,13 @@ import com.weaverplatform.nifi.util.WeaverProperties;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
+import org.apache.nifi.processor.ProcessorInitializationContext;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 import org.apache.nifi.util.NiFiProperties;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Bastiaan Bijl
@@ -23,6 +27,17 @@ public abstract class IndividualProcessor extends WeaverProcessor {
       .required(false)
       .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
       .build();
+
+
+  @Override
+  protected void init(final ProcessorInitializationContext context) {
+    
+    super.init(context);
+
+    final List<PropertyDescriptor> descriptors = new ArrayList<>();
+    descriptors.add(DATASET);
+
+  }
 
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
     

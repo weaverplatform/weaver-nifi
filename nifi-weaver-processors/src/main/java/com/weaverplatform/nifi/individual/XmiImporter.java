@@ -61,12 +61,11 @@ public class XmiImporter extends IndividualProcessor {
 
   @Override
   protected void init(final ProcessorInitializationContext context) {
-    final List<PropertyDescriptor> descriptors = new ArrayList<PropertyDescriptor>();
-    descriptors.add(WEAVER);
+
     this.descriptors = Collections.unmodifiableList(descriptors);
 
-    final Set<Relationship> relationships = new HashSet<Relationship>();
-    relationships.add(ORIGINAL);
+
+    relationshipSet.add(ORIGINAL);
     this.relationships = Collections.unmodifiableSet(relationships);
   }
 
@@ -82,13 +81,13 @@ public class XmiImporter extends IndividualProcessor {
 
   @Override
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
+
+    super.onTrigger(context, session);
     FlowFile flowFile = session.get();
 
     if ( flowFile == null ) {
       return;
     }
-
-    initIndividualProcessor(context);
 
 
     session.read(flowFile, new InputStreamCallback() {

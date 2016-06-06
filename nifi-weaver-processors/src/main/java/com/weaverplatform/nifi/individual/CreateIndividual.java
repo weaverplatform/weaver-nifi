@@ -80,28 +80,23 @@ public class CreateIndividual extends IndividualProcessor {
           .description("Original relationship to transfer content to")
           .build();
 
-  private List<PropertyDescriptor> properties;
-
-  private AtomicReference<Set<Relationship>> relationships = new AtomicReference<>();
-
 
   
   
   @Override
   protected void init(final ProcessorInitializationContext context) {
     
-    //position 0
-    final List<PropertyDescriptor> descriptors = new ArrayList<PropertyDescriptor>();
-    descriptors.add(WEAVER);
-    descriptors.add(DATASET);
+    super.init(context);
+    
+
     descriptors.add(INDIVIDUAL_ATTRIBUTE);
     descriptors.add(INDIVIDUAL_STATIC);
     descriptors.add(NAME_ATTRIBUTE);
     this.properties = Collections.unmodifiableList(descriptors);
 
-    final Set<Relationship> set = new HashSet<>();
-    set.add(ORIGINAL);
-    this.relationships = new AtomicReference<>(set);
+
+    relationshipSet.add(ORIGINAL);
+    this.relationships = new AtomicReference<>(relationshipSet);
   }
 
   @Override

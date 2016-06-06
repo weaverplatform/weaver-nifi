@@ -70,27 +70,26 @@ public class IndividualExists extends IndividualProcessor {
   
   @Override
   protected void init(final ProcessorInitializationContext context) {
-    final List<PropertyDescriptor> descriptors = new ArrayList<>();
-    descriptors.add(WEAVER);
+
     descriptors.add(ID_ATTRIBUTE);
     this.properties = Collections.unmodifiableList(descriptors);
 
-    final Set<Relationship> set = new HashSet<>();
-    set.add(EXISTS);
-    set.add(NOT_EXISTS);
-    this.relationships = new AtomicReference<>(set);
+
+    relationshipSet.add(EXISTS);
+    relationshipSet.add(NOT_EXISTS);
+    this.relationships = new AtomicReference<>(relationshipSet);
   }
 
   @Override
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
+
+    super.onTrigger(context, session);
 
     FlowFile flowFile = session.get();
 
     if (flowFile == null) {
       return;
     }
-
-    initIndividualProcessor(context);
 
     if(context.getProperty(WEAVER) != null) {
       weaverUrl = context.getProperty(WEAVER).getValue();
