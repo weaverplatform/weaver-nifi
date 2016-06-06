@@ -7,12 +7,12 @@
     <parent>
         <groupId>com.weaverplatform.nifi</groupId>
         <artifactId>weaver-nifi</artifactId>
-        <version>1.1.0</version>
+        <version>1.1.1-SNAPSHOT</version>
     </parent>
     
     <artifactId>nifi-weaver-processors</artifactId>
     <packaging>jar</packaging>
-    <version>1.1.0</version>
+    <version>1.1.1-SNAPSHOT</version>
     
     <dependencies>
         <!-- Used to read out nifi.properties-->
