@@ -1,27 +1,9 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.weaverplatform.nifi.individual;
 
-import com.weaverplatform.sdk.*;
-import com.weaverplatform.sdk.websocket.WeaverSocket;
-import org.apache.nifi.components.PropertyDescriptor;
-import org.apache.nifi.components.PropertyValue;
-import org.apache.nifi.flowfile.FlowFile;
-import org.apache.nifi.processor.*;
+import com.weaverplatform.sdk.Entity;
+import com.weaverplatform.sdk.EntityType;
+import com.weaverplatform.sdk.RelationKeys;
+import com.weaverplatform.sdk.ShallowEntity;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
@@ -29,12 +11,18 @@ import org.apache.nifi.annotation.behavior.WritesAttributes;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
+import org.apache.nifi.components.PropertyDescriptor;
+import org.apache.nifi.flowfile.FlowFile;
+import org.apache.nifi.processor.ProcessContext;
+import org.apache.nifi.processor.ProcessSession;
+import org.apache.nifi.processor.ProcessorInitializationContext;
+import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Tags({"weaver, create,individualproperty"})
@@ -44,62 +32,57 @@ import java.util.concurrent.atomic.AtomicReference;
 @WritesAttributes({@WritesAttribute(attribute="", description="")})
 public class CreateIndividualProperty extends IndividualProcessor {
 
-
-
   public static final PropertyDescriptor SUBJECT_ATTRIBUTE = new PropertyDescriptor
-    .Builder().name("subject_attribute")
-    .description("look for the flowfile attribute")
+    .Builder().name("Subject attribute")
+    .description("Look for the FlowFile attribute.")
     .required(false)
     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
     .build();
 
   public static final PropertyDescriptor SUBJECT_STATIC = new PropertyDescriptor
-    .Builder().name("subject_static")
-    .description("if there is no flowfile attribute, use static value")
+    .Builder().name("Subject static")
+    .description("If there is no FlowFile attribute, use static value.")
     .required(false)
     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
     .build();
 
   public static final PropertyDescriptor PREDICATE_ATTRIBUTE = new PropertyDescriptor
-    .Builder().name("predicate_attribute")
-    .description("look for the flowfile attribute")
+    .Builder().name("Predicate attribute")
+    .description("Look for the FlowFile attribute.")
     .required(false)
     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
     .build();
 
   public static final PropertyDescriptor PREDICATE_STATIC = new PropertyDescriptor
-    .Builder().name("predicate_static")
-    .description("if there is no flowfile attribute, use static value")
+    .Builder().name("Predicate static")
+    .description("If there is no FlowFile attribute, use static value.")
     .required(false)
     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
     .build();
 
   public static final PropertyDescriptor OBJECT_ATTRIBUTE = new PropertyDescriptor
-    .Builder().name("object_attribute")
-    .description("look for the flowfile attribute")
+    .Builder().name("Object attribute")
+    .description("Look for the FlowFile attribute.")
     .required(false)
     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
     .build();
 
   public static final PropertyDescriptor OBJECT_STATIC = new PropertyDescriptor
-    .Builder().name("object_static")
-    .description("if there is no flowfile attribute, use static value")
+    .Builder().name("Object static")
+    .description("If there is no FlowFile attribute, use static value.")
     .required(false)
     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
     .build();
 
   public static final Relationship ORIGINAL = new Relationship.Builder()
-    .name("original")
-    .description("Original relationship to transfer content to")
+    .name("Original relationship")
+    .description("Original relationship to transfer content to.")
     .build();
-
-  private List<PropertyDescriptor> properties;
-
-  private AtomicReference<Set<Relationship>> relationships = new AtomicReference<>();
 
   @Override
   protected void init(final ProcessorInitializationContext context) {
 
+    super.init(context);
 
     descriptors.add(SUBJECT_ATTRIBUTE);
     descriptors.add(SUBJECT_STATIC);
@@ -109,22 +92,8 @@ public class CreateIndividualProperty extends IndividualProcessor {
     descriptors.add(OBJECT_STATIC);
     this.properties = Collections.unmodifiableList(descriptors);
 
-
     relationshipSet.add(ORIGINAL);
     this.relationships = new AtomicReference<>(relationshipSet);
-  }
-
-  /* method required for dynamic property */
-  @Override
-  protected PropertyDescriptor getSupportedDynamicPropertyDescriptor(final String propertyDescriptorName) {
-    //position 1
-    return new PropertyDescriptor.Builder()
-      .required(false)
-      .name(propertyDescriptorName)
-      .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-      .dynamic(true)
-      .expressionLanguageSupported(false)
-      .build();
   }
 
   @Override
@@ -133,104 +102,96 @@ public class CreateIndividualProperty extends IndividualProcessor {
     super.onTrigger(context, session);
 
     FlowFile flowFile = session.get();
-
-    if ( flowFile == null ) {
-      //System.out.println("no flowfile");
+    if (flowFile == null) {
       return;
     }
 
-    String subject = get(context, flowFile, SUBJECT_ATTRIBUTE, SUBJECT_STATIC); // FunctionPhysicalObject id
-    String predicate = get(context, flowFile, PREDICATE_ATTRIBUTE, PREDICATE_STATIC); // ib:hasGeometry
-    String object = get(context, flowFile, OBJECT_ATTRIBUTE, OBJECT_STATIC); // Geometry_id
+    String subject = null;
+    String subjectAttributeValue = context.getProperty(SUBJECT_ATTRIBUTE).getValue();
+    String subjectStaticValue    = context.getProperty(SUBJECT_STATIC).getValue();
+    if(subjectAttributeValue != null) {
+      subject = flowFile.getAttribute(subjectAttributeValue);
+    } else if(subjectStaticValue != null) {
+      subject = subjectStaticValue;
+    }
+    if(subject == null) {
+      throw new ProcessException("No subject found for this Individual Property.");
+    }
 
-    Weaver weaver = new Weaver();
-    String weaverUrl = context.getProperty(WEAVER).getValue();
-    try {
-      weaver.connect(new WeaverSocket(new URI(weaverUrl)));
-    } catch (URISyntaxException e) {
-      System.out.println(e.getMessage());
+    String predicate = null;
+    String predicateAttributeValue = context.getProperty(PREDICATE_ATTRIBUTE).getValue();
+    String predicateStaticValue    = context.getProperty(PREDICATE_STATIC).getValue();
+    if(predicateAttributeValue != null) {
+      predicate = flowFile.getAttribute(predicateAttributeValue);
+    } else if(predicateStaticValue != null) {
+      predicate = predicateStaticValue;
+    }
+    if(predicate == null) {
+      throw new ProcessException("No predicate found for this Individual Property.");
+    }
+
+    String object = null;
+    String objectAttributeValue = context.getProperty(OBJECT_ATTRIBUTE).getValue();
+    String objectStaticValue    = context.getProperty(OBJECT_STATIC).getValue();
+    if(objectAttributeValue != null) {
+      object = flowFile.getAttribute(objectAttributeValue);
+    } else if(objectStaticValue != null) {
+      object = objectStaticValue;
+    }
+    if(object == null) {
+      throw new ProcessException("No object found for this Individual Property.");
     }
 
     try {
 
-      //get the parent object from weaver
-      Entity parent = weaver.get(subject);
+      // Get the parent object from weaver
+      Entity individual = weaver.get(subject);
 
-      //create child attributes
+      // Create child attributes
       Map<String, Object> entityAttributes = new HashMap<>();
       entityAttributes.put("predicate", predicate);
+      
+      // Find the object
+      Entity objectEntity = weaver.get(object);
+      if(objectEntity == null || !(EntityType.INDIVIDUAL.equals(objectEntity.getType()))) {
+        throw new ProcessException("Object entity could not be found in Weaver.");
+      }
+      
+      String id = idFromOptions(context, flowFile, true);
+      Entity individualProperty = weaver.add(entityAttributes, EntityType.INDIVIDUAL_PROPERTY, id);
 
-      //create the child entity and fill its attributes
-      Entity child = weaver.add(entityAttributes, EntityType.INDIVIDUAL_PROPERTY, weaver.createRandomUUID());
+      individualProperty.linkEntity(RelationKeys.SUBJECT, individual);
+      individualProperty.linkEntity(RelationKeys.OBJECT, objectEntity);
 
-      //make 2 entity:Individuals
-      //1. link the parent object to the child
-      child.linkEntity(RelationKeys.SUBJECT, parent);
-      //2. create theObject as object and link it to the child
-      Entity theObjChild = weaver.add(new HashMap<String, Object>(), EntityType.INDIVIDUAL, object);
-      child.linkEntity(RelationKeys.OBJECT, theObjChild);
-
-      //fetch parent collection
-      ShallowEntity shallowCollection = parent.getRelations().get(RelationKeys.PROPERTIES);
+      // Fetch parent collection
+      ShallowEntity shallowCollection = individual.getRelations().get(RelationKeys.PROPERTIES);
 
       Entity aCollection = weaver.get(shallowCollection.getId());
 
-      //link individual to collection
-      aCollection.linkEntity(child.getId(), child);
+      // Link individual to collection
+      aCollection.linkEntity(individualProperty.getId(), individualProperty);
 
-
-    }catch (IndexOutOfBoundsException e) {
-      System.out.println("de node waar naar gezocht moet worden is niet gevonden!");
-    }catch(NullPointerException e){
-      System.out.println("connection error and/or parent object does not exist");
+    } catch (IndexOutOfBoundsException e) {
+      throw new ProcessException(e);
+    } catch(NullPointerException e){
+      throw new ProcessException(e);
     }
 
+    weaver.close();
 
     session.transfer(flowFile, ORIGINAL);
-
-
   }
 
   @Override
-  public Set<Relationship> getRelationships() {
-    return this.relationships.get();
-  }
+  protected PropertyDescriptor getSupportedDynamicPropertyDescriptor(final String propertyDescriptorName) {
 
-  @Override
-  public final List<PropertyDescriptor> getSupportedPropertyDescriptors() {
-    return properties;
-  }
-
-  public boolean isEmpty(PropertyValue propertyValue){
-    String value = propertyValue.getValue();
-    if(value == null || value.length() == 0){
-      return true;
-    }
-    return false;
-  }
-
-  public String get (PropertyValue propertyValue){
-    return propertyValue.getValue();
-  }
-
-  public PropertyValue get (final ProcessContext c, PropertyDescriptor p){
-    return c.getProperty(p);
-  }
-
-  public String get (final ProcessContext c, FlowFile f, PropertyDescriptor a, PropertyDescriptor b){
-
-    boolean useAttribute = !isEmpty(get(c, a));
-    boolean useStatic = !isEmpty(get(c, b));
-
-    if( (useAttribute && useStatic) || (!useAttribute && !useStatic) ){
-      throw new RuntimeException("only " + a.getName() +" or "+b.getName()+" must be set");
-    }
-
-    if(useAttribute){
-      return f.getAttribute(get(get(c, a)));
-    }else{
-      return get(get(c, b));
-    }
+    return new PropertyDescriptor.Builder()
+      .required(false)
+      .name(propertyDescriptorName)
+      .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+      .dynamic(true)
+      .expressionLanguageSupported(false)
+      .build();
   }
 
 }

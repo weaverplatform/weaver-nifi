@@ -1,12 +1,16 @@
 package com.weaverplatform.nifi;
 
 import com.weaverplatform.nifi.util.WeaverProperties;
+import com.weaverplatform.sdk.Weaver;
+import com.weaverplatform.sdk.websocket.WeaverSocket;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.processor.*;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 import org.apache.nifi.util.NiFiProperties;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -27,10 +31,11 @@ public abstract class WeaverProcessor extends AbstractProcessor {
   public AtomicReference<Set<Relationship>> relationships;
 
   public String weaverUrl;
+  public Weaver weaver;
 
   public static final PropertyDescriptor WEAVER = new PropertyDescriptor
       .Builder().name("Weaver URL")
-      .description("weaver connection url i.e. weaver.connect(url)")
+      .description("Weaver connection URL i.e. weaver.connect(url).")
       .required(false)
       .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
       .build();
@@ -39,10 +44,7 @@ public abstract class WeaverProcessor extends AbstractProcessor {
   @Override
   protected void init(final ProcessorInitializationContext context) {
 
-
-
     descriptors.add(WEAVER);
-
 
   }
 
@@ -57,5 +59,24 @@ public abstract class WeaverProcessor extends AbstractProcessor {
     else {
       weaverUrl = NiFiProperties.getInstance().get(WeaverProperties.URL).toString();
     }
+
+    weaver = new Weaver();
+    try {
+      weaver.connect(new WeaverSocket(new URI(weaverUrl)));
+    } catch (URISyntaxException e) {
+      throw new ProcessException(e);
+    }
+  }
+
+
+
+  @Override
+  public Set<Relationship> getRelationships() {
+    return this.relationships.get();
+  }
+
+  @Override
+  public final List<PropertyDescriptor> getSupportedPropertyDescriptors() {
+    return properties;
   }
 }

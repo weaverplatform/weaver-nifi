@@ -16,25 +16,22 @@
  */
 package com.weaverplatform.nifi.individual;
 
-import com.weaverplatform.nifi.util.WeaverProperties;
-import com.weaverplatform.sdk.Weaver;
-import com.weaverplatform.sdk.websocket.WeaverSocket;
+import com.weaverplatform.sdk.Entity;
+import com.weaverplatform.sdk.EntityType;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
 import org.apache.nifi.annotation.behavior.WritesAttributes;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
-import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.flowfile.FlowFile;
-import org.apache.nifi.processor.*;
+import org.apache.nifi.processor.ProcessContext;
+import org.apache.nifi.processor.ProcessSession;
+import org.apache.nifi.processor.ProcessorInitializationContext;
+import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.processor.exception.ProcessException;
-import org.apache.nifi.processor.util.StandardValidators;
-import org.apache.nifi.util.NiFiProperties;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.*;
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Tags({"weaver, individual, exists"})
@@ -43,37 +40,22 @@ import java.util.concurrent.atomic.AtomicReference;
 @WritesAttributes({@WritesAttribute(attribute="", description="")})
 public class IndividualExists extends IndividualProcessor {
   
-
-
-  public static final PropertyDescriptor ID_ATTRIBUTE = new PropertyDescriptor
-    .Builder().name("id_attribute")
-    .description("Look for the ID in a flowfile attribute")
-    .required(true)
-    .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-    .build();
-
   public static final Relationship EXISTS = new Relationship.Builder()
-          .name("exists")
-          .description("Original flowfile if individual exists")
-          .build();
+    .name("Exists")
+    .description("Original FlowFile if individual exists.")
+    .build();
   
   public static final Relationship NOT_EXISTS = new Relationship.Builder()
-          .name("not exists")
-          .description("Original flowfile if individual does not exists")
-          .build();
+    .name("Not exists")
+    .description("Original FlowFile if individual does not exist.")
+    .build();
 
-  private List<PropertyDescriptor> properties;
-
-  private AtomicReference<Set<Relationship>> relationships = new AtomicReference<>();
-
-  private String weaverUrl;
-  
   @Override
   protected void init(final ProcessorInitializationContext context) {
+    
+    super.init(context);
 
-    descriptors.add(ID_ATTRIBUTE);
     this.properties = Collections.unmodifiableList(descriptors);
-
 
     relationshipSet.add(EXISTS);
     relationshipSet.add(NOT_EXISTS);
@@ -86,39 +68,18 @@ public class IndividualExists extends IndividualProcessor {
     super.onTrigger(context, session);
 
     FlowFile flowFile = session.get();
-
     if (flowFile == null) {
       return;
     }
-
-    if(context.getProperty(WEAVER) != null) {
-      weaverUrl = context.getProperty(WEAVER).getValue();
-    }
-    else {
-      weaverUrl = NiFiProperties.getInstance().get(WeaverProperties.URL).toString(); 
-    }
     
-    String individual_id = context.getProperty(ID_ATTRIBUTE).getValue();
-    
-    getLogger().info("Individual ID is: " + individual_id);
-    
-    Weaver weaver = new Weaver();
-    try {
-      weaver.connect(new WeaverSocket(new URI(weaverUrl)));
-    } catch (URISyntaxException e) {
-      System.out.println(e.getMessage());
+    String id = idFromOptions(context, flowFile, false);
+    Entity entity = weaver.get(id);
+    if(EntityType.INDIVIDUAL.equals(entity.getType())) {
+      session.transfer(flowFile, EXISTS);
+    } else {
+      session.transfer(flowFile, NOT_EXISTS);
     }
 
-    session.transfer(flowFile, EXISTS);
-  }
-
-  @Override
-  public Set<Relationship> getRelationships() {
-    return relationships.get();
-  }
-
-  @Override
-  public final List<PropertyDescriptor> getSupportedPropertyDescriptors() {
-    return properties;
+    weaver.close();
   }
 }
