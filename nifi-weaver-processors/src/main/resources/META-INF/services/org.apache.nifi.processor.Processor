@@ -12,9 +12,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-com.weaverplatform.nifi.CreateIndividual
-com.weaverplatform.nifi.CreateIndividualProperty
-com.weaverplatform.nifi.CreateValueProperty
-com.weaverplatform.nifi.GetWeaverId
-com.weaverplatform.nifi.IndividualExists
-com.weaverplatform.nifi.XmiImporter
+com.weaverplatform.nifi.individual.CreateIndividual
+com.weaverplatform.nifi.individual.CreateIndividualProperty
+com.weaverplatform.nifi.individual.CreateValueProperty
+com.weaverplatform.nifi.individual.IndividualExists
+com.weaverplatform.nifi.individual.XmiImporter

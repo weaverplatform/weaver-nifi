@@ -16,8 +16,9 @@ The basic idea of this component is that the value specified (that is component-
 ## CreateIndividualProperty
 This component is a child-component of CreateIndividual too, and its component-structure equals the CreateValueProperty processor. The major difference is the value specified here (that is component-property 'object') is saved as an new object and linked to its parent. That said, its possible to create new child objects with its value as objects and so on.
 
-## GetWeaverId
-This processor fetches a weaver id and outputs it (if found) as attribute 'weaver_id' of a new flowfile.
+## IndividualExists
+
+## XmiImporter
 
 ## Default
 All processors have a static component-property called 'weaver_url' which is used to connect to a weaver instance.
