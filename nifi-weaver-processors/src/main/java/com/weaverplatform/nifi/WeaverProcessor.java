@@ -22,8 +22,6 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public abstract class WeaverProcessor extends AbstractProcessor {
 
-
-
   public final List<PropertyDescriptor> descriptors = new ArrayList<>();
   public List<PropertyDescriptor> properties;
   
@@ -45,18 +43,14 @@ public abstract class WeaverProcessor extends AbstractProcessor {
   protected void init(final ProcessorInitializationContext context) {
 
     descriptors.add(WEAVER);
-
   }
-
-
 
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
 
     // Weaver URL
     if(context.getProperty(WEAVER).getValue() != null) {
       weaverUrl = context.getProperty(WEAVER).getValue();
-    }
-    else {
+    } else {
       weaverUrl = NiFiProperties.getInstance().get(WeaverProperties.URL).toString();
     }
 
@@ -67,8 +61,6 @@ public abstract class WeaverProcessor extends AbstractProcessor {
       throw new ProcessException(e);
     }
   }
-
-
 
   @Override
   public Set<Relationship> getRelationships() {

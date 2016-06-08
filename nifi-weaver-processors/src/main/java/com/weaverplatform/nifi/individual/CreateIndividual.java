@@ -89,7 +89,6 @@ public class CreateIndividual extends IndividualProcessor {
       return;
     }
     
-    
     String id = idFromOptions(context, flowFile, true);
 
     // Create entity by user attribute
@@ -111,7 +110,6 @@ public class CreateIndividual extends IndividualProcessor {
 
     Entity collection = weaver.collection();
     individual.linkEntity(RelationKeys.PROPERTIES, collection);
-
 
     weaver.close();
     

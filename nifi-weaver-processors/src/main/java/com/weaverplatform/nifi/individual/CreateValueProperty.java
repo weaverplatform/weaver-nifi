@@ -1,19 +1,3 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.weaverplatform.nifi.individual;
 
 import com.weaverplatform.sdk.Entity;
@@ -158,18 +142,14 @@ public class CreateValueProperty extends IndividualProcessor {
       throw new ProcessException("No object found for this Value Property.");
     }
 
-
-
     try {
 
       Entity parent = weaver.get(subject);
-
 
       Map<String, Object> entityAttributes = new HashMap<>();
       entityAttributes.put("predicate", predicate);
       entityAttributes.put("object", object);
 
-      
       String id = idFromOptions(context, flowFile, true);
       Entity valueProperty = weaver.add(entityAttributes, EntityType.VALUE_PROPERTY, id);
       valueProperty.linkEntity(RelationKeys.SUBJECT, parent);
@@ -177,8 +157,6 @@ public class CreateValueProperty extends IndividualProcessor {
 
       Entity aCollection = weaver.get(shallowCollection.getId());
       aCollection.linkEntity(valueProperty.getId(), valueProperty);
-
-
       
     } catch (IndexOutOfBoundsException e) {
       throw new ProcessException(e);
@@ -189,9 +167,5 @@ public class CreateValueProperty extends IndividualProcessor {
     weaver.close();
 
     session.transfer(flowFile, ORIGINAL);
-
   }
-
-
-
 }
