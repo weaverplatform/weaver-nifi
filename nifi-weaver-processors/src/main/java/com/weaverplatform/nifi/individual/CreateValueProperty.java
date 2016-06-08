@@ -49,50 +49,50 @@ import java.util.concurrent.atomic.AtomicReference;
 public class CreateValueProperty extends IndividualProcessor {
   
   public static final PropertyDescriptor SUBJECT_ATTRIBUTE = new PropertyDescriptor
-    .Builder().name("Subject attribute")
+    .Builder().name("Subject Attribute")
     .description("Look for the FlowFile attribute.")
     .required(false)
     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
     .build();
 
   public static final PropertyDescriptor SUBJECT_STATIC = new PropertyDescriptor
-    .Builder().name("Subject static")
+    .Builder().name("Subject Static")
     .description("If there is no FlowFile attribute, use static value.")
     .required(false)
     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
     .build();
 
   public static final PropertyDescriptor PREDICATE_ATTRIBUTE = new PropertyDescriptor
-    .Builder().name("Predicate attribute")
+    .Builder().name("Predicate Attribute")
     .description("Look for the FlowFile attribute.")
     .required(false)
     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
     .build();
 
   public static final PropertyDescriptor PREDICATE_STATIC = new PropertyDescriptor
-    .Builder().name("Predicate static")
+    .Builder().name("Predicate Static")
     .description("If there is no FlowFile attribute, use static value.")
     .required(false)
     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
     .build();
 
   public static final PropertyDescriptor OBJECT_ATTRIBUTE = new PropertyDescriptor
-    .Builder().name("Object attribute")
+    .Builder().name("Object Attribute")
     .description("Look for the FlowFile attribute.")
     .required(false)
     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
     .build();
 
   public static final PropertyDescriptor OBJECT_STATIC = new PropertyDescriptor
-    .Builder().name("Object static")
+    .Builder().name("Object Static")
     .description("If there is no FlowFile attribute, use static value.")
     .required(false)
     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
     .build();
 
   public static final Relationship ORIGINAL = new Relationship.Builder()
-    .name("Original")
-    .description("Original relationship to transfer content to.")
+    .name("Original Content")
+    .description("Relationship to send original content to to.")
     .build();
 
   @Override

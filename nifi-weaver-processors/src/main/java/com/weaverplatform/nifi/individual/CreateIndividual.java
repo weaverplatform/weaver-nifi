@@ -52,8 +52,8 @@ public class CreateIndividual extends IndividualProcessor {
     .build();
 
   public static final Relationship ORIGINAL = new Relationship.Builder()
-    .name("Original Relationship")
-    .description("Original relationship to transfer content to.")
+    .name("Original Content")
+    .description("Relationship to send original content to to.")
     .build();
   
   @Override

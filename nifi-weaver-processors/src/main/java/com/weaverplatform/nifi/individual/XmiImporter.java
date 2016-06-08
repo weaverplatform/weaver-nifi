@@ -44,8 +44,8 @@ public class XmiImporter extends IndividualProcessor {
     .build();
 
   public static final Relationship ORIGINAL = new Relationship.Builder()
-    .name("Original Relationship")
-    .description("This relationship is used to transfer the result to.")
+    .name("Original Content")
+    .description("Relationship to send original content to to.")
     .build();
 
   @Override
