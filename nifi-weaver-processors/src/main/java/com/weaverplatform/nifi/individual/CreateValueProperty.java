@@ -112,19 +112,21 @@ public class CreateValueProperty extends IndividualProcessor {
 
     try {
 
-      Entity parent = weaver.get(subject);
+      Entity individual = weaver.get(subject);
+
+      Map<String, ShallowEntity> relations = new HashMap<>();
+      relations.put("subject", individual);
 
       Map<String, Object> entityAttributes = new HashMap<>();
       entityAttributes.put("predicate", predicate);
       entityAttributes.put("object", object);
 
       String id = idFromOptions(context, flowFile, true);
-      Entity valueProperty = weaver.add(entityAttributes, EntityType.VALUE_PROPERTY, id);
-      valueProperty.linkEntity(RelationKeys.SUBJECT, parent);
-      ShallowEntity shallowCollection = parent.getRelations().get(RelationKeys.PROPERTIES);
+      Entity valueProperty = weaver.add(entityAttributes, EntityType.VALUE_PROPERTY, id, relations);
+      ShallowEntity properties = individual.getRelations().get(RelationKeys.PROPERTIES);
 
-      Entity aCollection = weaver.get(shallowCollection.getId());
-      aCollection.linkEntity(valueProperty.getId(), valueProperty);
+      Entity propertiesEntity = weaver.get(properties.getId());
+      propertiesEntity.linkEntity(valueProperty.getId(), valueProperty);
       
     } catch (IndexOutOfBoundsException e) {
       throw new ProcessException(e);
