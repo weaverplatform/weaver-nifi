@@ -79,7 +79,6 @@ public class XmiImporter extends IndividualProcessor {
       return;
     }
 
-
     session.read(flowFile, new InputStreamCallback() {
 
       @Override

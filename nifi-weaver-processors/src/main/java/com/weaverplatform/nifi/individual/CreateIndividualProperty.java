@@ -106,41 +106,9 @@ public class CreateIndividualProperty extends IndividualProcessor {
       return;
     }
 
-    String subject = null;
-    String subjectAttributeValue = context.getProperty(SUBJECT_ATTRIBUTE).getValue();
-    String subjectStaticValue    = context.getProperty(SUBJECT_STATIC).getValue();
-    if(subjectAttributeValue != null) {
-      subject = flowFile.getAttribute(subjectAttributeValue);
-    } else if(subjectStaticValue != null) {
-      subject = subjectStaticValue;
-    }
-    if(subject == null) {
-      throw new ProcessException("No subject found for this Individual Property.");
-    }
-
-    String predicate = null;
-    String predicateAttributeValue = context.getProperty(PREDICATE_ATTRIBUTE).getValue();
-    String predicateStaticValue    = context.getProperty(PREDICATE_STATIC).getValue();
-    if(predicateAttributeValue != null) {
-      predicate = flowFile.getAttribute(predicateAttributeValue);
-    } else if(predicateStaticValue != null) {
-      predicate = predicateStaticValue;
-    }
-    if(predicate == null) {
-      throw new ProcessException("No predicate found for this Individual Property.");
-    }
-
-    String object = null;
-    String objectAttributeValue = context.getProperty(OBJECT_ATTRIBUTE).getValue();
-    String objectStaticValue    = context.getProperty(OBJECT_STATIC).getValue();
-    if(objectAttributeValue != null) {
-      object = flowFile.getAttribute(objectAttributeValue);
-    } else if(objectStaticValue != null) {
-      object = objectStaticValue;
-    }
-    if(object == null) {
-      throw new ProcessException("No object found for this Individual Property.");
-    }
+    String subject = valueFromOptions(context, flowFile, SUBJECT_ATTRIBUTE, SUBJECT_STATIC, null);
+    String predicate = valueFromOptions(context, flowFile, PREDICATE_ATTRIBUTE, PREDICATE_STATIC, null);
+    String object = valueFromOptions(context, flowFile, OBJECT_ATTRIBUTE, OBJECT_STATIC, null);
 
     try {
 

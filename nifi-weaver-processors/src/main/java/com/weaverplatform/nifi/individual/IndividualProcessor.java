@@ -50,26 +50,28 @@ public abstract class IndividualProcessor extends WeaverProcessor {
   
   
   public String idFromOptions(ProcessContext context, FlowFile flowFile, boolean createRandomFallback) throws ProcessException {
-    String id = null;
-    String individualAttributeValue = context.getProperty(INDIVIDUAL_ATTRIBUTE).getValue();
-    String individualStaticValue    = context.getProperty(INDIVIDUAL_STATIC).getValue();
-
-    if(individualAttributeValue != null){
-      id = flowFile.getAttribute(individualAttributeValue);
+    
+    String fallback = null;
+    if(createRandomFallback) {
+      fallback = UUID.randomUUID().toString();
     }
-    else if(individualStaticValue != null){
-      id = individualStaticValue;
-    }
-
-    // Fallback generate random ID
-    if(id == null) {
-      if(!createRandomFallback) {
-        throw new ProcessException("No ID could be found.");
-      }
-      id = UUID.randomUUID().toString();
-    }
-    return id;
+    
+    return valueFromOptions(context, flowFile, INDIVIDUAL_ATTRIBUTE, INDIVIDUAL_STATIC, fallback);
   }
+  
+  public String valueFromOptions(ProcessContext context, FlowFile flowFile, PropertyDescriptor attributeValue, PropertyDescriptor staticValue, String fallback) throws ProcessException {
+    
+    String resultAttributeValue = context.getProperty(attributeValue).getValue();
+    String resultStaticValue    = context.getProperty(staticValue).getValue();
+    if(resultAttributeValue != null) {
+      return flowFile.getAttribute(resultAttributeValue);
+    } else if(resultStaticValue != null) {
+      return resultStaticValue;
+    }
 
-
+    if(fallback != null) {
+      return fallback;
+    }
+    throw new ProcessException("No attribute value could be found for "+attributeValue+" or "+staticValue);
+  }
 }
