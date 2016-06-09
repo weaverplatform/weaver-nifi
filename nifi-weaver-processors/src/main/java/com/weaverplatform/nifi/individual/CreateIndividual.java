@@ -51,6 +51,13 @@ public class CreateIndividual extends IndividualProcessor {
     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
     .build();
 
+  public static final PropertyDescriptor NAME_STATIC = new PropertyDescriptor
+    .Builder().name("Name Static")
+    .description("Look for a FlowFile attribute to set the name.")
+    .required(false)
+    .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+    .build();
+
   public static final Relationship ORIGINAL = new Relationship.Builder()
     .name("Original Content")
     .description("Relationship to send original content to to.")
@@ -63,6 +70,7 @@ public class CreateIndividual extends IndividualProcessor {
     
     descriptors.add(DATASET);
     descriptors.add(NAME_ATTRIBUTE);
+    descriptors.add(NAME_STATIC);
     this.properties = Collections.unmodifiableList(descriptors);
 
     relationshipSet.add(ORIGINAL);
