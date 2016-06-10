@@ -1,5 +1,6 @@
 package com.weaverplatform.nifi.individual;
 
+import com.weaverplatform.importer.xmi.ImportXmi;
 import com.weaverplatform.nifi.util.WeaverProperties;
 import com.weaverplatform.sdk.Entity;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
@@ -11,6 +12,7 @@ import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.flowfile.FlowFile;
+import org.apache.nifi.logging.ProcessorLog;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
@@ -53,6 +55,7 @@ public class XmiImporter extends IndividualProcessor {
     
     super.init(context);
 
+    descriptors.add(DATASET);
     this.properties = Collections.unmodifiableList(descriptors);
 
     relationshipSet.add(ORIGINAL);
@@ -62,7 +65,18 @@ public class XmiImporter extends IndividualProcessor {
   @Override
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
 
+    final ProcessorLog log = this.getLogger();
+
+    log.error("test");
+
+    weaverUrl = "http://192.168.99.100:9487";
+    datasetId = "model";
+
+    final AtomicReference<String> value = new AtomicReference<>();
+
     super.onTrigger(context, session);
+    log.info(context.toString());
+    log.info(session.toString());
 
     // Dataset
     if(context.getProperty(DATASET).getValue() != null) {
@@ -73,7 +87,7 @@ public class XmiImporter extends IndividualProcessor {
 
     dataset = weaver.get(datasetId);
     datasetObjects = weaver.get(dataset.getRelations().get("objects").getId());
-    
+
     FlowFile flowFile = session.get();
     if (flowFile == null) {
       return;
@@ -84,7 +98,9 @@ public class XmiImporter extends IndividualProcessor {
       @Override
       public void process(InputStream inputStream) throws IOException {
 
-        // TODO: call xmi importer
+        ImportXmi importXmi = new ImportXmi(weaverUrl, datasetId);
+        importXmi.readFromInputStream(inputStream);
+        importXmi.run();
 
       }
     });
