@@ -52,7 +52,7 @@ public class XmiImporter extends IndividualProcessor {
 
   @Override
   protected void init(final ProcessorInitializationContext context) {
-    
+
     super.init(context);
 
     descriptors.add(DATASET);
@@ -64,10 +64,8 @@ public class XmiImporter extends IndividualProcessor {
 
   @Override
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
-
-    final ProcessorLog log = this.getLogger();
-
-    log.error("test");
+      final ProcessorLog log = this.getLogger();
+      log.debug("started to trigger");
 
     weaverUrl = "http://192.168.99.100:9487";
     datasetId = "model";
@@ -75,8 +73,6 @@ public class XmiImporter extends IndividualProcessor {
     final AtomicReference<String> value = new AtomicReference<>();
 
     super.onTrigger(context, session);
-    log.info(context.toString());
-    log.info(session.toString());
 
     // Dataset
     if(context.getProperty(DATASET).getValue() != null) {
@@ -85,13 +81,16 @@ public class XmiImporter extends IndividualProcessor {
       datasetId = NiFiProperties.getInstance().get(WeaverProperties.DATASET).toString();
     }
 
-    dataset = weaver.get(datasetId);
-    datasetObjects = weaver.get(dataset.getRelations().get("objects").getId());
+    //dataset = weaver.get(datasetId);
+    //datasetObjects = weaver.get(dataset.getRelations().get("objects").getId());
 
     FlowFile flowFile = session.get();
     if (flowFile == null) {
+      log.debug("no flow file");
       return;
     }
+
+  log.info(flowFile.toString());
 
     session.read(flowFile, new InputStreamCallback() {
 
@@ -104,7 +103,7 @@ public class XmiImporter extends IndividualProcessor {
 
       }
     });
-    
+
     weaver.close();
 
     session.transfer(flowFile, ORIGINAL);
