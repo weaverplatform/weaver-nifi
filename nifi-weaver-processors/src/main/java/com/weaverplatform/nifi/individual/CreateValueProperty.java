@@ -17,7 +17,6 @@ import org.apache.nifi.logging.ProcessorLog;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
-import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 
@@ -31,7 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @SeeAlso({})
 @ReadsAttributes({@ReadsAttribute(attribute="", description="")})
 @WritesAttributes({@WritesAttribute(attribute="", description="")})
-public class CreateValueProperty extends IndividualProcessor {
+public class CreateValueProperty extends FlowFileProcessor {
   
   public static final PropertyDescriptor SUBJECT_ATTRIBUTE = new PropertyDescriptor
     .Builder().name("Subject Attribute")
@@ -75,10 +74,6 @@ public class CreateValueProperty extends IndividualProcessor {
     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
     .build();
 
-  public static final Relationship ORIGINAL = new Relationship.Builder()
-    .name("Original Content")
-    .description("Relationship to send original content to to.")
-    .build();
 
   @Override
   protected void init(final ProcessorInitializationContext context) {
@@ -93,7 +88,7 @@ public class CreateValueProperty extends IndividualProcessor {
     descriptors.add(OBJECT_STATIC);
     this.properties = Collections.unmodifiableList(descriptors);
     
-    relationshipSet.add(ORIGINAL);
+
     this.relationships = new AtomicReference<>(relationshipSet);
   }
 
@@ -101,11 +96,6 @@ public class CreateValueProperty extends IndividualProcessor {
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
 
     super.onTrigger(context, session);
-
-    FlowFile flowFile = session.get();
-    if ( flowFile == null ) {
-      return;
-    }
 
     String subject = valueFromOptions(context, flowFile, SUBJECT_ATTRIBUTE, SUBJECT_STATIC, null);
     String predicate = valueFromOptions(context, flowFile, PREDICATE_ATTRIBUTE, PREDICATE_STATIC, null);
