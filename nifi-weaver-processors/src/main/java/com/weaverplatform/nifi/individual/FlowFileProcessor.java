@@ -40,7 +40,7 @@ public abstract class FlowFileProcessor extends EntityProcessor {
 
     flowFile = session.get();
     if (flowFile == null) {
-      log.debug("no flow file");
+      //    log.debug("no flow file");
       return;
     }
 

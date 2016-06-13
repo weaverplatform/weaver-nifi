@@ -9,6 +9,7 @@ import org.apache.nifi.annotation.behavior.WritesAttributes;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.flowfile.FlowFile;
+import org.apache.nifi.logging.ProcessorLog;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
@@ -58,6 +59,8 @@ public class IndividualExists extends EntityProcessor {
     
     String id = idFromOptions(context, flowFile, false);
     Entity entity = weaver.get(id);
+    final ProcessorLog log = this.getLogger();
+    log.error(Boolean.toString(EntityType.INDIVIDUAL.equals(entity.getType())));
     if(EntityType.INDIVIDUAL.equals(entity.getType())) {
       session.transfer(flowFile, EXISTS);
     } else {

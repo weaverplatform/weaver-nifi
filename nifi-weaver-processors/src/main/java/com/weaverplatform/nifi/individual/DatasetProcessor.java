@@ -3,6 +3,7 @@ package com.weaverplatform.nifi.individual;
 import com.weaverplatform.nifi.util.WeaverProperties;
 import com.weaverplatform.sdk.Entity;
 import org.apache.nifi.components.PropertyDescriptor;
+import org.apache.nifi.logging.ProcessorLog;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
@@ -46,11 +47,16 @@ public abstract class DatasetProcessor extends FlowFileProcessor {
     } else {
       datasetId = NiFiProperties.getInstance().get(WeaverProperties.DATASET).toString();
     }
-    log.info("will use this dataset "+datasetId);
+    //log.info("will use this dataset "+datasetId);
+    final ProcessorLog log = this.getLogger();
+    log.error(datasetId);
 
-    dataset = weaver.get(datasetId);
-    datasetObjects = weaver.get(dataset.getRelations().get("objects").getId());
-
+    try {
+        dataset = weaver.get(datasetId);
+        datasetObjects = weaver.get(dataset.getRelations().get("objects").getId());
+    } catch(NullPointerException e) {
+        log.error(e.getMessage());
+    }
   }
 
 
