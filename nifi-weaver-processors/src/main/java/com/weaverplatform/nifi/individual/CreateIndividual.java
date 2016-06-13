@@ -87,7 +87,9 @@ public class CreateIndividual extends DatasetProcessor {
     individual.linkEntity(RelationKeys.PROPERTIES, collection);
 
     weaver.close();
-    
+
+    String attributeNameForId = context.getProperty(ATTRIBUTE_NAME_FOR_ID).getValue();
+    flowFile = session.putAttribute(flowFile, attributeNameForId, id);
     session.transfer(flowFile, ORIGINAL);
   }
 }
