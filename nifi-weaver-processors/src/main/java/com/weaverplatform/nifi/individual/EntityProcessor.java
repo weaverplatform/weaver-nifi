@@ -14,7 +14,7 @@ import java.util.UUID;
 /**
  * @author Bastiaan Bijl
  */
-public abstract class IndividualProcessor extends WeaverProcessor {
+public abstract class EntityProcessor extends WeaverProcessor {
 
   public static final PropertyDescriptor INDIVIDUAL_ATTRIBUTE = new PropertyDescriptor
       .Builder().name("Individual Attribute")

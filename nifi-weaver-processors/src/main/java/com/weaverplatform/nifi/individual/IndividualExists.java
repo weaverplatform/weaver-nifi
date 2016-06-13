@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @SeeAlso({})
 @ReadsAttributes({@ReadsAttribute(attribute="", description="")})
 @WritesAttributes({@WritesAttribute(attribute="", description="")})
-public class IndividualExists extends IndividualProcessor {
+public class IndividualExists extends EntityProcessor {
   
   public static final Relationship EXISTS = new Relationship.Builder()
     .name("Exists")

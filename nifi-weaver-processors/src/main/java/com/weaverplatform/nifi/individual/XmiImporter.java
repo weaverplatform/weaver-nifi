@@ -1,8 +1,6 @@
 package com.weaverplatform.nifi.individual;
 
 import com.weaverplatform.importer.xmi.ImportXmi;
-import com.weaverplatform.nifi.util.WeaverProperties;
-import com.weaverplatform.sdk.Entity;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
@@ -10,17 +8,11 @@ import org.apache.nifi.annotation.behavior.WritesAttributes;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
-import org.apache.nifi.components.PropertyDescriptor;
-import org.apache.nifi.flowfile.FlowFile;
-import org.apache.nifi.logging.ProcessorLog;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
-import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.io.InputStreamCallback;
-import org.apache.nifi.processor.util.StandardValidators;
-import org.apache.nifi.util.NiFiProperties;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,65 +24,23 @@ import java.util.concurrent.atomic.AtomicReference;
 @SeeAlso({})
 @ReadsAttributes({@ReadsAttribute(attribute="", description="")})
 @WritesAttributes({@WritesAttribute(attribute="", description="")})
-public class XmiImporter extends IndividualProcessor {
-
-  String datasetId;
-  Entity dataset;
-  Entity datasetObjects;
-
-  public static final PropertyDescriptor DATASET = new PropertyDescriptor
-    .Builder().name("Dataset ID")
-    .description("Dataset ID to add individuals to.")
-    .required(false)
-    .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-    .build();
-
-  public static final Relationship ORIGINAL = new Relationship.Builder()
-    .name("Original Content")
-    .description("Relationship to send original content to to.")
-    .build();
+public class XmiImporter extends DatasetProcessor {
 
   @Override
   protected void init(final ProcessorInitializationContext context) {
 
     super.init(context);
 
-    descriptors.add(DATASET);
     this.properties = Collections.unmodifiableList(descriptors);
-
-    relationshipSet.add(ORIGINAL);
     this.relationships = new AtomicReference<>(relationshipSet);
   }
 
   @Override
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
-      final ProcessorLog log = this.getLogger();
-      log.debug("started to trigger");
-
-    weaverUrl = "http://192.168.99.100:9487";
-    datasetId = "model";
-
-    final AtomicReference<String> value = new AtomicReference<>();
 
     super.onTrigger(context, session);
 
-    // Dataset
-    if(context.getProperty(DATASET).getValue() != null) {
-      datasetId = context.getProperty(DATASET).getValue();
-    } else {
-      datasetId = NiFiProperties.getInstance().get(WeaverProperties.DATASET).toString();
-    }
-
-    //dataset = weaver.get(datasetId);
-    //datasetObjects = weaver.get(dataset.getRelations().get("objects").getId());
-
-    FlowFile flowFile = session.get();
-    if (flowFile == null) {
-      log.debug("no flow file");
-      return;
-    }
-
-  log.info(flowFile.toString());
+    log.info("will run xmi now");
 
     session.read(flowFile, new InputStreamCallback() {
 
