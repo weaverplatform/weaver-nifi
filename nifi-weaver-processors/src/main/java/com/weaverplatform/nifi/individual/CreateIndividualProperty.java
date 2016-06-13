@@ -12,6 +12,8 @@ import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.components.PropertyDescriptor;
+import org.apache.nifi.flowfile.FlowFile;
+import org.apache.nifi.logging.ProcessorLog;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
@@ -100,6 +102,11 @@ public class CreateIndividualProperty extends FlowFileProcessor {
     String predicate = valueFromOptions(context, flowFile, PREDICATE_ATTRIBUTE, PREDICATE_STATIC, null);
     String object = valueFromOptions(context, flowFile, OBJECT_ATTRIBUTE, OBJECT_STATIC, null);
 
+    final ProcessorLog log = this.getLogger();
+    log.error(subject);
+    log.error(object);
+    log.error(predicate);
+
     try {
 
       // Get the parent object from weaver
@@ -112,6 +119,7 @@ public class CreateIndividualProperty extends FlowFileProcessor {
       // Find the object
       Entity objectEntity = weaver.get(object);
       if(objectEntity == null || !(EntityType.INDIVIDUAL.equals(objectEntity.getType()))) {
+        log.error("Object entity could not be found in Weaver.");
         throw new ProcessException("Object entity could not be found in Weaver.");
       }
       
