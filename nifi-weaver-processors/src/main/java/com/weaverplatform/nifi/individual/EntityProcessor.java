@@ -30,6 +30,14 @@ public abstract class EntityProcessor extends WeaverProcessor {
       .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
       .build();
 
+  public static final PropertyDescriptor ATTRIBUTE_NAME_FOR_ID = new PropertyDescriptor
+      .Builder().name("Attribute Name For Id")
+      .description("Expose the id of the created Entity as FlowFile attribute using this attribute name.")
+      .required(true)
+      .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+      .build();
+
+
 
   @Override
   protected void init(final ProcessorInitializationContext context) {
@@ -38,6 +46,7 @@ public abstract class EntityProcessor extends WeaverProcessor {
 
     descriptors.add(INDIVIDUAL_ATTRIBUTE);
     descriptors.add(INDIVIDUAL_STATIC);
+    descriptors.add(ATTRIBUTE_NAME_FOR_ID);
 
   }
 

@@ -116,15 +116,17 @@ public class CreateValueProperty extends FlowFileProcessor {
 
       Entity propertiesEntity = weaver.get(properties.getId());
       propertiesEntity.linkEntity(valueProperty.getId(), valueProperty);
+
+      weaver.close();
+
+      String attributeNameForId = context.getProperty(ATTRIBUTE_NAME_FOR_ID).getValue();
+      flowFile = session.putAttribute(flowFile, attributeNameForId, id);
+      session.transfer(flowFile, ORIGINAL);
       
     } catch (IndexOutOfBoundsException e) {
       throw new ProcessException(e);
     } catch (NullPointerException e) {
       throw new ProcessException(e);
     }
-
-    weaver.close();
-
-    session.transfer(flowFile, ORIGINAL);
   }
 }
