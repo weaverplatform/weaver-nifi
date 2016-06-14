@@ -11,6 +11,7 @@ import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.components.PropertyDescriptor;
+import org.apache.nifi.logging.ProcessorLog;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
@@ -59,6 +60,7 @@ public class CreateIndividual extends DatasetProcessor {
 
   @Override
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
+    final ProcessorLog log = this.getLogger();
     
     super.onTrigger(context, session);
 
@@ -88,8 +90,12 @@ public class CreateIndividual extends DatasetProcessor {
 
     weaver.close();
 
-    String attributeNameForId = context.getProperty(ATTRIBUTE_NAME_FOR_ID).getValue();
-    flowFile = session.putAttribute(flowFile, attributeNameForId, id);
+    try {
+      String attributeNameForId = context.getProperty(ATTRIBUTE_NAME_FOR_ID).getValue();
+      flowFile = session.putAttribute(flowFile, attributeNameForId, id);
+    } catch(Exception e){
+      log.error(e.getMessage() + "fired!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!GGGG");
+    }
     session.transfer(flowFile, ORIGINAL);
   }
 }
