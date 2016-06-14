@@ -121,20 +121,21 @@ public class CreateIndividualProperty extends FlowFileProcessor {
         log.error("Object entity could not be found in Weaver.");
         throw new ProcessException("Object entity could not be found in Weaver.");
       }
+
+      Map<String, ShallowEntity> relations = new HashMap<>();
+      relations.put(RelationKeys.SUBJECT, individual);
+      relations.put(RelationKeys.OBJECT, objectEntity);
       
       String id = idFromOptions(context, flowFile, true);
-      Entity individualProperty = weaver.add(entityAttributes, EntityType.INDIVIDUAL_PROPERTY, id);
-
-      individualProperty.linkEntity(RelationKeys.SUBJECT, individual);
-      individualProperty.linkEntity(RelationKeys.OBJECT, objectEntity);
+      Entity individualProperty = weaver.add(entityAttributes, EntityType.INDIVIDUAL_PROPERTY, id, relations);
 
       // Fetch parent collection
       ShallowEntity shallowCollection = individual.getRelations().get(RelationKeys.PROPERTIES);
 
-      Entity aCollection = weaver.get(shallowCollection.getId());
+      Entity entityProperties = weaver.get(shallowCollection.getId());
 
       // Link individual to collection
-      aCollection.linkEntity(individualProperty.getId(), individualProperty);
+      entityProperties.linkEntity(individualProperty.getId(), individualProperty);
 
       weaver.close();
   
