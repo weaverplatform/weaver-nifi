@@ -42,7 +42,7 @@ public abstract class DatasetProcessor extends FlowFileProcessor {
 
     super.onTrigger(context, session);
 
-    if(context.getProperty(DATASET).getValue() != null) {
+    if(context.getProperty(DATASET).isSet()) {
       datasetId = context.getProperty(DATASET).getValue();
     } else {
       datasetId = NiFiProperties.getInstance().get(WeaverProperties.DATASET).toString();

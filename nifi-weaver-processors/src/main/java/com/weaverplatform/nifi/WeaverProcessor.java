@@ -48,7 +48,7 @@ public abstract class WeaverProcessor extends AbstractProcessor {
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
 
     // Weaver URL
-    if(context.getProperty(WEAVER).getValue() != null) {
+    if(context.getProperty(WEAVER).isSet()) {
       weaverUrl = context.getProperty(WEAVER).getValue();
     } else {
       weaverUrl = NiFiProperties.getInstance().get(WeaverProperties.URL).toString();

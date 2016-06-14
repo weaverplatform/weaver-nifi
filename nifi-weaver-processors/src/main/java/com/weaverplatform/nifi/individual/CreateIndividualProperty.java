@@ -12,7 +12,6 @@ import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.components.PropertyDescriptor;
-import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.logging.ProcessorLog;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
@@ -139,8 +138,10 @@ public class CreateIndividualProperty extends FlowFileProcessor {
 
       weaver.close();
   
-      String attributeNameForId = context.getProperty(ATTRIBUTE_NAME_FOR_ID).getValue();
-      flowFile = session.putAttribute(flowFile, attributeNameForId, id);
+      if(context.getProperty(ATTRIBUTE_NAME_FOR_ID).isSet()) {
+        String attributeNameForId = context.getProperty(ATTRIBUTE_NAME_FOR_ID).getValue();
+        flowFile = session.putAttribute(flowFile, attributeNameForId, id);
+      }
       session.transfer(flowFile, ORIGINAL);
 
     } catch (IndexOutOfBoundsException e) {

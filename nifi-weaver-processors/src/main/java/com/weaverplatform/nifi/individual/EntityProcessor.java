@@ -70,12 +70,10 @@ public abstract class EntityProcessor extends WeaverProcessor {
   
   public String valueFromOptions(ProcessContext context, FlowFile flowFile, PropertyDescriptor attributeValue, PropertyDescriptor staticValue, String fallback) throws ProcessException {
     
-    String resultAttributeValue = context.getProperty(attributeValue).getValue();
-    String resultStaticValue    = context.getProperty(staticValue).getValue();
-    if(resultAttributeValue != null) {
-      return flowFile.getAttribute(resultAttributeValue);
-    } else if(resultStaticValue != null) {
-      return resultStaticValue;
+    if(context.getProperty(attributeValue).isSet()) {
+      return flowFile.getAttribute(context.getProperty(attributeValue).getValue());
+    } else if(context.getProperty(staticValue).isSet()) {
+      return context.getProperty(staticValue).getValue();
     }
 
     if(fallback != null) {

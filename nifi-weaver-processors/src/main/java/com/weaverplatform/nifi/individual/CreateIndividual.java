@@ -12,6 +12,7 @@ import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.components.PropertyDescriptor;
+import org.apache.nifi.components.PropertyValue;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
@@ -77,9 +78,8 @@ public class CreateIndividual extends DatasetProcessor {
     // Create entity by user attribute
     Map<String, Object> attributes = new HashMap<>();
     String name = null;
-    String nameAttribute = context.getProperty(NAME_ATTRIBUTE).getValue();
-    if(nameAttribute != null) {
-      name = flowFile.getAttribute(nameAttribute);
+    if(context.getProperty(NAME_ATTRIBUTE).isSet()) {
+      name = flowFile.getAttribute(context.getProperty(NAME_ATTRIBUTE).getValue());
     }
     if(name == null) {
       name = "Unnamed";
@@ -101,14 +101,16 @@ public class CreateIndividual extends DatasetProcessor {
     individual.linkEntity(RelationKeys.ANNOTATIONS, entityAnnotations);
     
     // If a name predicate is set, create a name predicate and a name property
-    if(context.getProperty(NAME_PREDICATE_STATIC) != null) {
+    PropertyValue predicateProperty = context.getProperty(NAME_PREDICATE_STATIC);
+    if(predicateProperty.isSet()) {
       
       String predicate = context.getProperty(NAME_PREDICATE_STATIC).getValue();
 
       // Make name annotation
       HashMap<String, Object> nameAnnotationAttributes = new HashMap<>();
-      nameAnnotationAttributes.put("label", "rdfs:label");
+      nameAnnotationAttributes.put("label", predicate);
       nameAnnotationAttributes.put("celltype", "string");
+      nameAnnotationAttributes.put("datatype", "xsd:string");
       Entity nameAnnotation = weaver.add(nameAnnotationAttributes, EntityType.ANNOTATION);
       entityAnnotations.linkEntity(nameAnnotation.getId(), nameAnnotation);
 
@@ -128,8 +130,10 @@ public class CreateIndividual extends DatasetProcessor {
     
     weaver.close();
 
-    String attributeNameForId = context.getProperty(ATTRIBUTE_NAME_FOR_ID).getValue();
-    flowFile = session.putAttribute(flowFile, attributeNameForId, id);
+    if(context.getProperty(ATTRIBUTE_NAME_FOR_ID).isSet()) {
+      String attributeNameForId = context.getProperty(ATTRIBUTE_NAME_FOR_ID).getValue();
+      flowFile = session.putAttribute(flowFile, attributeNameForId, id);
+    }
     session.transfer(flowFile, ORIGINAL);
   }
 }
