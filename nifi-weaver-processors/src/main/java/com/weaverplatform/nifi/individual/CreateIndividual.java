@@ -3,6 +3,7 @@ package com.weaverplatform.nifi.individual;
 import com.weaverplatform.sdk.Entity;
 import com.weaverplatform.sdk.EntityType;
 import com.weaverplatform.sdk.RelationKeys;
+import com.weaverplatform.sdk.ShallowEntity;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
@@ -20,6 +21,7 @@ import org.apache.nifi.processor.util.StandardValidators;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Tags({"weaver, create, individual"})
@@ -43,6 +45,13 @@ public class CreateIndividual extends DatasetProcessor {
     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
     .build();
 
+  public static final PropertyDescriptor NAME_PREDICATE_STATIC = new PropertyDescriptor
+    .Builder().name("Name Predicate Static")
+    .description("Use this predicate to set the name as ValueProperty.")
+    .required(false)
+    .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+    .build();
+
   @Override
   protected void init(final ProcessorInitializationContext context) {
     
@@ -51,6 +60,7 @@ public class CreateIndividual extends DatasetProcessor {
     
     descriptors.add(NAME_ATTRIBUTE);
     descriptors.add(NAME_STATIC);
+    descriptors.add(NAME_PREDICATE_STATIC);
     this.properties = Collections.unmodifiableList(descriptors);
 
 
@@ -75,7 +85,7 @@ public class CreateIndividual extends DatasetProcessor {
       name = "Unnamed";
     }
     attributes.put("name", name);
-    log.info("create individual with name "+name);
+    log.info("create individual with name " + name);
     
     log.info("create individual with id "+id);
     Entity individual = weaver.add(attributes, EntityType.INDIVIDUAL, id);
@@ -83,9 +93,39 @@ public class CreateIndividual extends DatasetProcessor {
     // Attach to dataset
     datasetObjects.linkEntity(id, individual);
 
-    Entity collection = weaver.collection();
-    individual.linkEntity(RelationKeys.PROPERTIES, collection);
+    Entity entityProperties = weaver.collection();
+    individual.linkEntity(RelationKeys.PROPERTIES, entityProperties);
+    
+    
+    Entity entityAnnotations = weaver.collection();
+    individual.linkEntity(RelationKeys.ANNOTATIONS, entityAnnotations);
+    
+    // If a name predicate is set, create a name predicate and a name property
+    if(context.getProperty(NAME_PREDICATE_STATIC) != null) {
+      
+      String predicate = context.getProperty(NAME_PREDICATE_STATIC).getValue();
 
+      // Make name annotation
+      HashMap<String, Object> nameAnnotationAttributes = new HashMap<>();
+      nameAnnotationAttributes.put("label", "rdfs:label");
+      nameAnnotationAttributes.put("celltype", "string");
+      Entity nameAnnotation = weaver.add(nameAnnotationAttributes, EntityType.ANNOTATION);
+      entityAnnotations.linkEntity(nameAnnotation.getId(), nameAnnotation);
+
+      // Make a name property
+      Map<String, ShallowEntity> relations = new HashMap<>();
+      relations.put("subject", individual);
+      relations.put("annotation", nameAnnotation);
+
+      HashMap<String, Object> propertyAttributes = new HashMap<>();
+      propertyAttributes.put("predicate", predicate);
+      propertyAttributes.put("object", name);
+
+      Entity nameProperty = weaver.add(propertyAttributes, EntityType.VALUE_PROPERTY, UUID.randomUUID().toString(), relations);
+      entityProperties.linkEntity(nameProperty.getId(), nameProperty);
+      
+    }
+    
     weaver.close();
 
     String attributeNameForId = context.getProperty(ATTRIBUTE_NAME_FOR_ID).getValue();
