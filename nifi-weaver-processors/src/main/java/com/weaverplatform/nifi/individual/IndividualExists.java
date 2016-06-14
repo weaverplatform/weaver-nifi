@@ -49,6 +49,7 @@ public class IndividualExists extends EntityProcessor {
 
   @Override
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
+    final ProcessorLog log = this.getLogger();
 
     super.onTrigger(context, session);
 
@@ -59,8 +60,9 @@ public class IndividualExists extends EntityProcessor {
     
     String id = idFromOptions(context, flowFile, false);
     Entity entity = weaver.get(id);
-    final ProcessorLog log = this.getLogger();
+
     log.error(Boolean.toString(EntityType.INDIVIDUAL.equals(entity.getType())));
+    log.error(id);
     if(EntityType.INDIVIDUAL.equals(entity.getType())) {
       session.transfer(flowFile, EXISTS);
     } else {

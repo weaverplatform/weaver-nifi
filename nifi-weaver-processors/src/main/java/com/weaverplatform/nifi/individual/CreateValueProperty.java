@@ -94,47 +94,37 @@ public class CreateValueProperty extends FlowFileProcessor {
   @Override
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
 
+    final ProcessorLog log = this.getLogger();
+
     super.onTrigger(context, session);
 
     String subject = valueFromOptions(context, flowFile, SUBJECT_ATTRIBUTE, SUBJECT_STATIC, null);
     String predicate = valueFromOptions(context, flowFile, PREDICATE_ATTRIBUTE, PREDICATE_STATIC, null);
     String object = valueFromOptions(context, flowFile, OBJECT_ATTRIBUTE, OBJECT_STATIC, null);
 
-    final ProcessorLog log = this.getLogger();
-    log.error(subject);
-    log.error(object);
-    log.error(predicate);
+    Entity individual = weaver.get(subject);
 
-    try {
+    Map<String, ShallowEntity> relations = new HashMap<>();
+    relations.put("subject", individual);
 
-      Entity individual = weaver.get(subject);
+    Map<String, Object> entityAttributes = new HashMap<>();
+    entityAttributes.put("predicate", predicate);
+    entityAttributes.put("object", object);
 
-      Map<String, ShallowEntity> relations = new HashMap<>();
-      relations.put("subject", individual);
+    String id = idFromOptions(context, flowFile, true);
 
-      Map<String, Object> entityAttributes = new HashMap<>();
-      entityAttributes.put("predicate", predicate);
-      entityAttributes.put("object", object);
+    Entity valueProperty = weaver.add(entityAttributes, EntityType.VALUE_PROPERTY, id, relations);
+    ShallowEntity properties = individual.getRelations().get(RelationKeys.PROPERTIES);
 
-      String id = idFromOptions(context, flowFile, true);
-      Entity valueProperty = weaver.add(entityAttributes, EntityType.VALUE_PROPERTY, id, relations);
-      ShallowEntity properties = individual.getRelations().get(RelationKeys.PROPERTIES);
+    Entity propertiesEntity = weaver.get(properties.getId());
+    propertiesEntity.linkEntity(valueProperty.getId(), valueProperty);
 
-      Entity propertiesEntity = weaver.get(properties.getId());
-      propertiesEntity.linkEntity(valueProperty.getId(), valueProperty);
+    weaver.close();
 
-      weaver.close();
-
-      if(context.getProperty(ATTRIBUTE_NAME_FOR_ID).isSet()) {
-        String attributeNameForId = context.getProperty(ATTRIBUTE_NAME_FOR_ID).getValue();
-        flowFile = session.putAttribute(flowFile, attributeNameForId, id);
-      }
-      session.transfer(flowFile, ORIGINAL);
-      
-    } catch (IndexOutOfBoundsException e) {
-      throw new ProcessException(e);
-    } catch (NullPointerException e) {
-      throw new ProcessException(e);
+    if(context.getProperty(ATTRIBUTE_NAME_FOR_ID).isSet()) {
+      String attributeNameForId = context.getProperty(ATTRIBUTE_NAME_FOR_ID).getValue();
+      flowFile = session.putAttribute(flowFile, attributeNameForId, id);
     }
+    session.transfer(flowFile, ORIGINAL);
   }
 }
