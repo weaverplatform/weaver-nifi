@@ -12,6 +12,7 @@ import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.flowfile.FlowFile;
+import org.apache.nifi.logging.ProcessorLog;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
@@ -93,6 +94,7 @@ public class GetIdFromProperty extends FlowFileProcessor {
 
   @Override
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
+    final ProcessorLog log = this.getLogger();
 
     super.onTrigger(context, session);
 

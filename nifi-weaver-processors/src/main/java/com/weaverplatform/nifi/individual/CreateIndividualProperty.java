@@ -95,6 +95,7 @@ public class CreateIndividualProperty extends FlowFileProcessor {
 
   @Override
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
+    final ProcessorLog log = this.getLogger();
 
     super.onTrigger(context, session);
 
@@ -102,7 +103,6 @@ public class CreateIndividualProperty extends FlowFileProcessor {
     String predicate = valueFromOptions(context, flowFile, PREDICATE_ATTRIBUTE, PREDICATE_STATIC, null);
     String object = valueFromOptions(context, flowFile, OBJECT_ATTRIBUTE, OBJECT_STATIC, null);
 
-    final ProcessorLog log = this.getLogger();
     log.error(subject);
     log.error(object);
     log.error(predicate);

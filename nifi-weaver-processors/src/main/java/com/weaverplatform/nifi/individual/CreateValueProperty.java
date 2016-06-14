@@ -95,45 +95,42 @@ public class CreateValueProperty extends FlowFileProcessor {
   @Override
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
 
+    final ProcessorLog log = this.getLogger();
+
     super.onTrigger(context, session);
 
     String subject = valueFromOptions(context, flowFile, SUBJECT_ATTRIBUTE, SUBJECT_STATIC, null);
     String predicate = valueFromOptions(context, flowFile, PREDICATE_ATTRIBUTE, PREDICATE_STATIC, null);
     String object = valueFromOptions(context, flowFile, OBJECT_ATTRIBUTE, OBJECT_STATIC, null);
 
-    final ProcessorLog log = this.getLogger();
-    log.error(subject);
-    log.error(object);
-    log.error(predicate);
+    Entity individual = weaver.get(subject);
+
+    Map<String, ShallowEntity> relations = new HashMap<>();
+    relations.put("subject", individual);
+
+    Map<String, Object> entityAttributes = new HashMap<>();
+    entityAttributes.put("predicate", predicate);
+    entityAttributes.put("object", object);
+
+    String id = idFromOptions(context, flowFile, true);
+
+    Entity valueProperty = weaver.add(entityAttributes, EntityType.VALUE_PROPERTY, id, relations);
+    ShallowEntity properties = individual.getRelations().get(RelationKeys.PROPERTIES);
+
+    Entity propertiesEntity = weaver.get(properties.getId());
+    propertiesEntity.linkEntity(valueProperty.getId(), valueProperty);
+
+    weaver.close();
 
     try {
-
-      Entity individual = weaver.get(subject);
-
-      Map<String, ShallowEntity> relations = new HashMap<>();
-      relations.put("subject", individual);
-
-      Map<String, Object> entityAttributes = new HashMap<>();
-      entityAttributes.put("predicate", predicate);
-      entityAttributes.put("object", object);
-
-      String id = idFromOptions(context, flowFile, true);
-      Entity valueProperty = weaver.add(entityAttributes, EntityType.VALUE_PROPERTY, id, relations);
-      ShallowEntity properties = individual.getRelations().get(RelationKeys.PROPERTIES);
-
-      Entity propertiesEntity = weaver.get(properties.getId());
-      propertiesEntity.linkEntity(valueProperty.getId(), valueProperty);
-
-      weaver.close();
-
       String attributeNameForId = context.getProperty(ATTRIBUTE_NAME_FOR_ID).getValue();
       flowFile = session.putAttribute(flowFile, attributeNameForId, id);
-      session.transfer(flowFile, ORIGINAL);
-      
-    } catch (IndexOutOfBoundsException e) {
-      throw new ProcessException(e);
-    } catch (NullPointerException e) {
-      throw new ProcessException(e);
+    } catch(Exception e) {
+      log.info("Dynamically-named Attribute creator not found. (ATTRIBUTE_NAME_FOR_ID) -- CreateValueProperty.java : 135");
+      log.error(e.getMessage());
     }
+
+    session.transfer(flowFile, ORIGINAL);
+
   }
 }

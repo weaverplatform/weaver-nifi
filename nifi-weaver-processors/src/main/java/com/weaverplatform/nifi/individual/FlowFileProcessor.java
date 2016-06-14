@@ -13,11 +13,8 @@ import org.apache.nifi.processor.exception.ProcessException;
  */
 public abstract class FlowFileProcessor extends EntityProcessor {
 
-  final ProcessorLog log = this.getLogger();
-
   FlowFile flowFile;
-  
-  
+
 
   public static final Relationship ORIGINAL = new Relationship.Builder()
       .name("Original Content")
