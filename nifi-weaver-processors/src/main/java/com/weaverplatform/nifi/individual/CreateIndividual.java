@@ -70,6 +70,7 @@ public class CreateIndividual extends DatasetProcessor {
     descriptors.add(NAME_ATTRIBUTE);
     descriptors.add(NAME_STATIC);
     descriptors.add(NAME_PREDICATE_STATIC);
+    descriptors.add(NAME_PREFIX);
     this.properties = Collections.unmodifiableList(descriptors);
 
 
@@ -90,7 +91,7 @@ public class CreateIndividual extends DatasetProcessor {
     
     // Check for prefix
     if(context.getProperty(NAME_PREFIX).isSet()) {
-      name += context.getProperty(NAME_PREFIX).getValue();
+      name = context.getProperty(NAME_PREFIX).getValue() + name;
     }
     
     
