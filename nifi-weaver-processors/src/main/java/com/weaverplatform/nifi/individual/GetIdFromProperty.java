@@ -98,6 +98,9 @@ public class GetIdFromProperty extends FlowFileProcessor {
 
     super.onTrigger(context, session);
 
+    if(!context.getProperty(ATTRIBUTE_NAME_FOR_ID).isSet()) {
+      throw new ProcessException("Setting Attribute Name For Id is required!");
+    }
     String attributeNameForId = context.getProperty(ATTRIBUTE_NAME_FOR_ID).getValue();
 
     String subject = valueFromOptions(context, flowFile, SUBJECT_ATTRIBUTE, SUBJECT_STATIC, null);
