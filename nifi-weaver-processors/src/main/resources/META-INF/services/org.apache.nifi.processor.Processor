@@ -12,9 +12,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+com.weaverplatform.nifi.individual.CreateEntity
 com.weaverplatform.nifi.individual.CreateIndividual
 com.weaverplatform.nifi.individual.CreateIndividualProperty
-com.weaverplatform.nifi.individual.CreateValueProperty
-com.weaverplatform.nifi.individual.IndividualExists
-com.weaverplatform.nifi.individual.XmiImporter
+com.weaverplatform.nifi.individual.CreateValueProperty    
 com.weaverplatform.nifi.individual.GetIdFromProperty
+com.weaverplatform.nifi.individual.IndividualExists
+com.weaverplatform.nifi.individual.WipeProcessor
+com.weaverplatform.nifi.individual.XmiImporter
