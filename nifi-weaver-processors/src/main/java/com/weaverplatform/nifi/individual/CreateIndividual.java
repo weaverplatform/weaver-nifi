@@ -87,13 +87,6 @@ public class CreateIndividual extends DatasetProcessor {
     // Create entity by user attribute
     Map<String, Object> attributes = new HashMap<>();
     String name = valueFromOptions(context, flowFile, NAME_ATTRIBUTE, NAME_STATIC, "Unnamed");
-    String name = null;
-    if(context.getProperty(NAME_ATTRIBUTE).isSet()) {
-      name = flowFile.getAttribute(context.getProperty(NAME_ATTRIBUTE).getValue());
-    }
-    if(name == null) {
-      name = "Unnamed";
-    }
     
     // Check for prefix
     if(context.getProperty(NAME_PREFIX).isSet()) {
