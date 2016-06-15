@@ -96,9 +96,10 @@ public class CreateIndividual extends DatasetProcessor {
     
     
     attributes.put("name", name);
+
     log.info("create individual with name " + name);
-    
     log.info("create individual with id "+id);
+
     Entity individual = weaver.add(attributes, EntityType.INDIVIDUAL, id);
     
     // Attach to dataset
