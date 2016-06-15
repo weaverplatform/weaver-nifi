@@ -9,6 +9,7 @@ import org.apache.nifi.annotation.behavior.WritesAttributes;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.flowfile.FlowFile;
+import org.apache.nifi.logging.ProcessorLog;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
@@ -22,7 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @SeeAlso({})
 @ReadsAttributes({@ReadsAttribute(attribute="", description="")})
 @WritesAttributes({@WritesAttribute(attribute="", description="")})
-public class IndividualExists extends IndividualProcessor {
+public class IndividualExists extends EntityProcessor {
   
   public static final Relationship EXISTS = new Relationship.Builder()
     .name("Exists")
@@ -48,6 +49,7 @@ public class IndividualExists extends IndividualProcessor {
 
   @Override
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
+    final ProcessorLog log = this.getLogger();
 
     super.onTrigger(context, session);
 
@@ -58,6 +60,7 @@ public class IndividualExists extends IndividualProcessor {
     
     String id = idFromOptions(context, flowFile, false);
     Entity entity = weaver.get(id);
+
     if(EntityType.INDIVIDUAL.equals(entity.getType())) {
       session.transfer(flowFile, EXISTS);
     } else {

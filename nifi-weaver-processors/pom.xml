@@ -31,7 +31,7 @@
             <artifactId>nifi-processor-utils</artifactId>
             <version>0.6.0</version>
         </dependency>
-        <dependency>
+        <dependency>                   
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-mock</artifactId>
             <version>0.6.0</version>
@@ -48,6 +48,11 @@
             <artifactId>junit</artifactId>
             <version>4.11</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.weaverplatform</groupId>
+            <artifactId>import-xmi</artifactId>
+            <version>1.0.2-SNAPSHOT</version>
         </dependency>
     </dependencies>
 

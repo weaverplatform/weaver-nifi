@@ -14,7 +14,7 @@ import java.util.UUID;
 /**
  * @author Bastiaan Bijl
  */
-public abstract class IndividualProcessor extends WeaverProcessor {
+public abstract class EntityProcessor extends WeaverProcessor {
 
   public static final PropertyDescriptor INDIVIDUAL_ATTRIBUTE = new PropertyDescriptor
       .Builder().name("Individual Attribute")
@@ -30,6 +30,14 @@ public abstract class IndividualProcessor extends WeaverProcessor {
       .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
       .build();
 
+  public static final PropertyDescriptor ATTRIBUTE_NAME_FOR_ID = new PropertyDescriptor
+      .Builder().name("Attribute Name For Id")
+      .description("Expose the id of the created Entity as FlowFile attribute using this attribute name.")
+      .required(false)
+      .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+      .build();
+
+
 
   @Override
   protected void init(final ProcessorInitializationContext context) {
@@ -38,6 +46,7 @@ public abstract class IndividualProcessor extends WeaverProcessor {
 
     descriptors.add(INDIVIDUAL_ATTRIBUTE);
     descriptors.add(INDIVIDUAL_STATIC);
+    descriptors.add(ATTRIBUTE_NAME_FOR_ID);
 
   }
 
@@ -61,12 +70,10 @@ public abstract class IndividualProcessor extends WeaverProcessor {
   
   public String valueFromOptions(ProcessContext context, FlowFile flowFile, PropertyDescriptor attributeValue, PropertyDescriptor staticValue, String fallback) throws ProcessException {
     
-    String resultAttributeValue = context.getProperty(attributeValue).getValue();
-    String resultStaticValue    = context.getProperty(staticValue).getValue();
-    if(resultAttributeValue != null) {
-      return flowFile.getAttribute(resultAttributeValue);
-    } else if(resultStaticValue != null) {
-      return resultStaticValue;
+    if(context.getProperty(attributeValue).isSet()) {
+      return flowFile.getAttribute(context.getProperty(attributeValue).getValue());
+    } else if(context.getProperty(staticValue).isSet()) {
+      return context.getProperty(staticValue).getValue();
     }
 
     if(fallback != null) {
