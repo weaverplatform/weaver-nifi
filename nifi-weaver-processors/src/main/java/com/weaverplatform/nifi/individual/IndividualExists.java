@@ -61,8 +61,6 @@ public class IndividualExists extends EntityProcessor {
     String id = idFromOptions(context, flowFile, false);
     Entity entity = weaver.get(id);
 
-    log.error(Boolean.toString(EntityType.INDIVIDUAL.equals(entity.getType())));
-    log.error(id);
     if(EntityType.INDIVIDUAL.equals(entity.getType())) {
       session.transfer(flowFile, EXISTS);
     } else {

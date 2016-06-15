@@ -102,9 +102,7 @@ public class CreateIndividualProperty extends FlowFileProcessor {
     String predicate = valueFromOptions(context, flowFile, PREDICATE_ATTRIBUTE, PREDICATE_STATIC, null);
     String object = valueFromOptions(context, flowFile, OBJECT_ATTRIBUTE, OBJECT_STATIC, null);
 
-    log.error(subject);
-    log.error(object);
-    log.error(predicate);
+    log.info("Creating Individual Property with SUBJECT: " + subject + ", OBJECT: " + object +  ", and PREDICATE: " + predicate + ".");
 
     try {
 

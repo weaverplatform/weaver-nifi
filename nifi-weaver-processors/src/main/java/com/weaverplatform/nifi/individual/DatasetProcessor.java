@@ -47,15 +47,13 @@ public abstract class DatasetProcessor extends FlowFileProcessor {
     } else {
       datasetId = NiFiProperties.getInstance().get(WeaverProperties.DATASET).toString();
     }
-    //log.info("will use this dataset "+datasetId);
-    final ProcessorLog log = this.getLogger();
-    log.error(datasetId);
 
     try {
         dataset = weaver.get(datasetId);
         datasetObjects = weaver.get(dataset.getRelations().get("objects").getId());
     } catch(NullPointerException e) {
-        log.error(e.getMessage());
+      final ProcessorLog log = this.getLogger();
+      log.error(e.getMessage());
     }
   }
 
