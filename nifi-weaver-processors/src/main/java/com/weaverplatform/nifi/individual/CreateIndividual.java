@@ -91,7 +91,7 @@ public class CreateIndividual extends DatasetProcessor {
     
     // Check for prefix
     if(context.getProperty(NAME_PREFIX).isSet()) {
-      name += context.getProperty(NAME_PREFIX).getValue();
+      name = context.getProperty(NAME_PREFIX).getValue() + name;
     }
     
     
