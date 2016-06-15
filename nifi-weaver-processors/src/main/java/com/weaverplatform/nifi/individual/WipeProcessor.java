@@ -26,12 +26,12 @@ import java.util.concurrent.atomic.AtomicReference;
 @SeeAlso({})
 @ReadsAttributes({@ReadsAttribute(attribute="", description="")})
 @WritesAttributes({@WritesAttribute(attribute="", description="")})
-public class CreateEntity extends FlowFileProcessor {
+public class WipeProcessor extends FlowFileProcessor {
   
   public static final PropertyDescriptor ENTITY_TYPE = new PropertyDescriptor
     .Builder().name("Entity Type")
     .description("The created entity will be of this type (e.g. $INDIVIDUAL).")
-    .required(true)
+    .required(false)
     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
     .build();
   
@@ -56,13 +56,6 @@ public class CreateEntity extends FlowFileProcessor {
     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
     .build();
 
-  public static final PropertyDescriptor COLLECTION_LIST = new PropertyDescriptor
-    .Builder().name("Collection List")
-    .description("Comma separated list of all the collections the new Entity should own.")
-    .required(false)
-    .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-    .build();
-
   @Override
   protected void init(final ProcessorInitializationContext context) {
     
@@ -73,7 +66,6 @@ public class CreateEntity extends FlowFileProcessor {
     descriptors.add(NAME_ATTRIBUTE);
     descriptors.add(NAME_STATIC);
     descriptors.add(NAME_PREFIX);
-    descriptors.add(COLLECTION_LIST);
     this.properties = Collections.unmodifiableList(descriptors);
 
 
@@ -91,8 +83,10 @@ public class CreateEntity extends FlowFileProcessor {
     // Create entity by user attribute
     Map<String, Object> attributes = new HashMap<>();
     String name = valueFromOptions(context, flowFile, NAME_ATTRIBUTE, NAME_STATIC, "Unnamed");
+
+    // Check for prefix
     if(context.getProperty(NAME_PREFIX).isSet()) {
-      name = context.getProperty(NAME_PREFIX).getValue() + name;
+      name += context.getProperty(NAME_PREFIX).getValue();
     }
     attributes.put("name", name);
 
@@ -102,15 +96,6 @@ public class CreateEntity extends FlowFileProcessor {
     log.info("create entity of type "+entityType+" with id "+id+" with name " + name);
 
     Entity individual = weaver.add(attributes, entityType, id);
-    
-    if(context.getProperty(COLLECTION_LIST).isSet()) {
-      String[] list = context.getProperty(COLLECTION_LIST).getValue().split(",");
-      for(int i = 0; i<list.length; i++) {
-        String collectionName = list[i].trim();
-        Entity collection = weaver.collection();
-        individual.linkEntity(collectionName, collection);
-      }
-    }
 
     weaver.close();
 
