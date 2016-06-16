@@ -2,8 +2,6 @@ package com.weaverplatform.nifi.view;
 
 import com.weaverplatform.nifi.individual.DatasetProcessor;
 import com.weaverplatform.sdk.Entity;
-import com.weaverplatform.sdk.EntityType;
-import com.weaverplatform.sdk.RelationKeys;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
@@ -102,10 +100,10 @@ public class CreateFilter extends DatasetProcessor {
     attributes.put("predicate", context.getProperty(PREDICATE_STATIC).getValue());
 
     // Create filter
-    Entity filter = weaver.add(attributes, EntityType.FILTER);
+    Entity filter = weaver.add(attributes, "$FILTER");
     
     // Give it the minimal collections it needs to be qualified as a valid filter
-    filter.linkEntity(RelationKeys.CONDITIONS, weaver.collection());
+    filter.linkEntity("conditions", weaver.collection());
     
     // Attach to view
     Entity filters = weaver.get(view.getRelations().get("filters").getId());

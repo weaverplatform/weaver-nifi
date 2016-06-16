@@ -3,7 +3,6 @@ package com.weaverplatform.nifi.view;
 import com.weaverplatform.nifi.individual.DatasetProcessor;
 import com.weaverplatform.sdk.Entity;
 import com.weaverplatform.sdk.EntityType;
-import com.weaverplatform.sdk.RelationKeys;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
@@ -79,8 +78,8 @@ public class CreateView extends DatasetProcessor {
     getDatasetViews().linkEntity(id, view);
 
     // Give it the minimal collections it needs to be qualified as a valid view
-    view.linkEntity(RelationKeys.FILTERS, weaver.collection());
-    view.linkEntity(RelationKeys.OBJECTS, weaver.collection());
+    view.linkEntity("filters", weaver.collection());
+//    view.linkEntity("objects", weaver.collection());     //TODO a view slouldnt have this right??
     
     // Close connection
     weaver.close();
