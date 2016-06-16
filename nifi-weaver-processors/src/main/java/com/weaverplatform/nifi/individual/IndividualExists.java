@@ -2,6 +2,7 @@ package com.weaverplatform.nifi.individual;
 
 import com.weaverplatform.sdk.Entity;
 import com.weaverplatform.sdk.EntityType;
+import com.weaverplatform.sdk.Weaver;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
@@ -52,6 +53,7 @@ public class IndividualExists extends EntityProcessor {
     final ProcessorLog log = this.getLogger();
 
     super.onTrigger(context, session);
+    Weaver weaver = getWeaver();
 
     FlowFile flowFile = session.get();
     if (flowFile == null) {

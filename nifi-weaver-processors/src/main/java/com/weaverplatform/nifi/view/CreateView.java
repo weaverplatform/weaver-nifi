@@ -3,6 +3,7 @@ package com.weaverplatform.nifi.view;
 import com.weaverplatform.nifi.individual.DatasetProcessor;
 import com.weaverplatform.sdk.Entity;
 import com.weaverplatform.sdk.EntityType;
+import com.weaverplatform.sdk.Weaver;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
@@ -58,7 +59,9 @@ public class CreateView extends DatasetProcessor {
 
   @Override
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
+    
     super.onTrigger(context, session);
+    Weaver weaver = getWeaver();
 
     ProcessorLog log  = this.getLogger();
     FlowFile flowFile = this.getFlowFile();

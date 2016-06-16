@@ -1,6 +1,7 @@
 package com.weaverplatform.nifi.individual;
 
 import com.weaverplatform.nifi.WeaverProcessor;
+import com.weaverplatform.sdk.Weaver;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
@@ -51,6 +52,7 @@ public class WipeProcessor extends WeaverProcessor {
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
 
     super.onTrigger(context, session);
+    Weaver weaver = getWeaver();
 
     final ProcessorLog log = this.getLogger();
     flowFile = session.get();

@@ -1,6 +1,7 @@
 package com.weaverplatform.nifi.individual;
 
 import com.weaverplatform.sdk.Entity;
+import com.weaverplatform.sdk.Weaver;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
@@ -85,6 +86,7 @@ public class CreateEntity extends FlowFileProcessor {
     final ProcessorLog log = this.getLogger();
 
     super.onTrigger(context, session);
+    Weaver weaver = getWeaver();
 
     String id = idFromOptions(context, flowFile, true);
 

@@ -94,6 +94,7 @@ public class CreateIndividual extends DatasetProcessor {
     final ProcessorLog log = this.getLogger();
     
     super.onTrigger(context, session);
+    Weaver weaver = getWeaver();
 
     String id = idFromOptions(context, flowFile, true);
     String name = getName(context);
@@ -193,6 +194,7 @@ public class CreateIndividual extends DatasetProcessor {
   }
 
   private void createNameValueProperty(String predicate, String name) {
+    Weaver weaver = getWeaver();
 
     // Make name annotation
     HashMap<String, Object> nameAnnotationAttributes = new HashMap<>();
@@ -226,6 +228,7 @@ public class CreateIndividual extends DatasetProcessor {
   }
 
   private void createIndividual(String id, Map<String, Object> attributes) {
+    Weaver weaver = getWeaver();
 
     individual = weaver.add(attributes, EntityType.INDIVIDUAL, id);
 

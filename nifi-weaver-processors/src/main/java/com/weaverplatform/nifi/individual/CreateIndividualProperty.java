@@ -1,9 +1,6 @@
 package com.weaverplatform.nifi.individual;
 
-import com.weaverplatform.sdk.Entity;
-import com.weaverplatform.sdk.EntityType;
-import com.weaverplatform.sdk.RelationKeys;
-import com.weaverplatform.sdk.ShallowEntity;
+import com.weaverplatform.sdk.*;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
@@ -105,6 +102,7 @@ public class CreateIndividualProperty extends FlowFileProcessor {
     final ProcessorLog log = this.getLogger();
 
     super.onTrigger(context, session);
+    Weaver weaver = getWeaver();
 
     String subjectId = valueFromOptions(context, flowFile, SUBJECT_ATTRIBUTE, SUBJECT_STATIC, null);
     String predicate = valueFromOptions(context, flowFile, PREDICATE_ATTRIBUTE, PREDICATE_STATIC, null);
@@ -181,6 +179,7 @@ public class CreateIndividualProperty extends FlowFileProcessor {
   }
 
   private Entity createIndividual(String id, Map<String, Object> attributes) {
+    Weaver weaver = getWeaver();
 
     Entity individual = weaver.add(attributes, EntityType.INDIVIDUAL, id);
 

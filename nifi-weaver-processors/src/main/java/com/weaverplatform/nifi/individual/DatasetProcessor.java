@@ -2,6 +2,7 @@ package com.weaverplatform.nifi.individual;
 
 import com.weaverplatform.nifi.util.WeaverProperties;
 import com.weaverplatform.sdk.Entity;
+import com.weaverplatform.sdk.Weaver;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
@@ -56,6 +57,7 @@ public abstract class DatasetProcessor extends FlowFileProcessor {
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
 
     super.onTrigger(context, session);
+    Weaver weaver = getWeaver();
 
     if(context.getProperty(DATASET).isSet()) {
       datasetId = context.getProperty(DATASET).getValue();

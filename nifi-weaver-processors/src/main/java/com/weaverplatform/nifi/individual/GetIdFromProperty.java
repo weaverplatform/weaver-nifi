@@ -2,6 +2,7 @@ package com.weaverplatform.nifi.individual;
 
 import com.weaverplatform.sdk.Entity;
 import com.weaverplatform.sdk.ShallowEntity;
+import com.weaverplatform.sdk.Weaver;
 import com.weaverplatform.sdk.json.request.QueryFromFilter;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
@@ -97,6 +98,7 @@ public class GetIdFromProperty extends FlowFileProcessor {
     final ProcessorLog log = this.getLogger();
 
     super.onTrigger(context, session);
+    Weaver weaver = getWeaver();
 
     if(!context.getProperty(ATTRIBUTE_NAME_FOR_ID).isSet()) {
       throw new ProcessException("Setting Attribute Name For Id is required!");

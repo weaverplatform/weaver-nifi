@@ -29,7 +29,7 @@ public abstract class WeaverProcessor extends AbstractProcessor {
   public AtomicReference<Set<Relationship>> relationships;
 
   public String weaverUrl;
-  public Weaver weaver;
+  private Weaver weaver;
 
   public static final PropertyDescriptor WEAVER = new PropertyDescriptor
       .Builder().name("Weaver URL")
@@ -41,6 +41,8 @@ public abstract class WeaverProcessor extends AbstractProcessor {
   
   @Override
   protected void init(final ProcessorInitializationContext context) {
+    
+    getLogger().error("init started");
 
     descriptors.add(WEAVER);
 
@@ -57,6 +59,10 @@ public abstract class WeaverProcessor extends AbstractProcessor {
     } catch (URISyntaxException e) {
       throw new ProcessException(e);
     }
+  }
+  
+  public Weaver getWeaver() {
+    return weaver;
   }
 
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
