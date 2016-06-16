@@ -2,7 +2,6 @@ package com.weaverplatform.nifi.view;
 
 import com.weaverplatform.nifi.individual.DatasetProcessor;
 import com.weaverplatform.sdk.Entity;
-import com.weaverplatform.sdk.EntityType;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
@@ -98,7 +97,7 @@ public class CreateFilterCondition extends DatasetProcessor {
     attributes.put("operation",     context.getProperty(OPERATION_STATIC).getValue());
 
     // Create condition
-    Entity condition = weaver.add(attributes, EntityType.CONDITION);
+    Entity condition = weaver.add(attributes, "$CONDITION");
     
     // Link to the individual
     Entity individual = weaver.get(context.getProperty(INDIVIDUAL_STATIC).getValue());

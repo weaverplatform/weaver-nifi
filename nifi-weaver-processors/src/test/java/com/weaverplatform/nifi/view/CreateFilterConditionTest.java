@@ -74,7 +74,7 @@ public class CreateFilterConditionTest {
     dataset = weaver.add(attributes, EntityType.DATASET, WEAVER_DATASET);
     
     // Give it the minimal collections it needs to be qualified as a valid view
-    dataset.linkEntity(RelationKeys.VIEWS, weaver.collection());
+    dataset.linkEntity("views", weaver.collection());
     dataset.linkEntity(RelationKeys.OBJECTS, weaver.collection());
     
     // Create view
@@ -83,7 +83,7 @@ public class CreateFilterConditionTest {
     view = weaver.add(attributes, EntityType.VIEW);
 
     // Give it the minimal collections it needs to be qualified as a valid view
-    view.linkEntity(RelationKeys.FILTERS, weaver.collection());
+    view.linkEntity("filters", weaver.collection());
     view.linkEntity(RelationKeys.OBJECTS, weaver.collection());
 
     // Attach to dataset views
@@ -95,10 +95,10 @@ public class CreateFilterConditionTest {
     filterAttributes.put("label", "Type");
     filterAttributes.put("celltype", "individual");
     filterAttributes.put("predicate", "rdf:type");
-    filter = weaver.add(filterAttributes, EntityType.FILTER);
+    filter = weaver.add(filterAttributes, "$FILTER");
 
     // Give it the minimal collections it needs to be qualified as a valid view
-    filter.linkEntity(RelationKeys.CONDITIONS, weaver.collection());
+    filter.linkEntity("conditions", weaver.collection());
     
     // Attach to view
     Entity filters = weaver.get(view.getRelations().get("filters").getId());
