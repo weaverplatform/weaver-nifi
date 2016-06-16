@@ -49,6 +49,9 @@ public class WipeProcessor extends WeaverProcessor {
 
   @Override
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
+
+    super.onTrigger(context, session);
+
     final ProcessorLog log = this.getLogger();
     flowFile = session.get();
     weaver.wipe();
