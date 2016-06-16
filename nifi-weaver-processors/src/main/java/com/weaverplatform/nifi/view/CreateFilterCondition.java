@@ -108,7 +108,7 @@ public class CreateFilterCondition extends DatasetProcessor {
     conditions.linkEntity(condition.getId(), condition);
     
     // Close connection
-    weaver.close();
+//    weaver.close();
 
     // Pass ID of this condition as attribute in flowfile
     if(context.getProperty(ATTRIBUTE_NAME_FOR_CONDITION_ID).isSet()) {

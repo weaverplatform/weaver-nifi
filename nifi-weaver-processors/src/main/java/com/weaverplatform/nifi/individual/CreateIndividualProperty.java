@@ -158,7 +158,7 @@ public class CreateIndividualProperty extends FlowFileProcessor {
     entityProperties.linkEntity(individualProperty.getId(), individualProperty);
 
 
-    weaver.close();
+//    weaver.close();
 
     if (context.getProperty(ATTRIBUTE_NAME_FOR_ID).isSet()) {
       String attributeNameForId = context.getProperty(ATTRIBUTE_NAME_FOR_ID).getValue();

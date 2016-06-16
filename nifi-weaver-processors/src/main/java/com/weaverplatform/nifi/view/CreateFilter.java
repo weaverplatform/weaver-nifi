@@ -110,7 +110,7 @@ public class CreateFilter extends DatasetProcessor {
     filters.linkEntity(filter.getId(), filter);
     
     // Close connection
-    weaver.close();
+//    weaver.close();
 
     // Pass ID of this filter as attribute in flowfile
     if(context.getProperty(ATTRIBUTE_NAME_FOR_FILTER_ID).isSet()) {

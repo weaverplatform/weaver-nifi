@@ -82,7 +82,7 @@ public class CreateView extends DatasetProcessor {
     view.linkEntity("objects", weaver.collection());
     
     // Close connection
-    weaver.close();
+//    weaver.close();
 
     // Pass ID of this view as attribute in flowfile
     if(context.getProperty(ATTRIBUTE_NAME_FOR_ID).isSet()) {

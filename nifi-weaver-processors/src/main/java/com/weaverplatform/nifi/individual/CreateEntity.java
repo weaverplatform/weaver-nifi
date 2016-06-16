@@ -112,7 +112,7 @@ public class CreateEntity extends FlowFileProcessor {
       }
     }
 
-    weaver.close();
+//    weaver.close();
 
     if(context.getProperty(ATTRIBUTE_NAME_FOR_ID).isSet()) {
       String attributeNameForId = context.getProperty(ATTRIBUTE_NAME_FOR_ID).getValue();

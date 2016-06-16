@@ -119,7 +119,7 @@ public class CreateValueProperty extends FlowFileProcessor {
     Entity propertiesEntity = weaver.get(properties.getId());
     propertiesEntity.linkEntity(valueProperty.getId(), valueProperty);
 
-    weaver.close();
+//    weaver.close();
 
     if(context.getProperty(ATTRIBUTE_NAME_FOR_ID).isSet()) {
       String attributeNameForId = context.getProperty(ATTRIBUTE_NAME_FOR_ID).getValue();

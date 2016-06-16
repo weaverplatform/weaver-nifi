@@ -67,6 +67,6 @@ public class IndividualExists extends EntityProcessor {
       session.transfer(flowFile, NOT_EXISTS);
     }
 
-    weaver.close();
+//    weaver.close();
   }
 }

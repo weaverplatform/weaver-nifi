@@ -43,16 +43,13 @@ public abstract class WeaverProcessor extends AbstractProcessor {
   protected void init(final ProcessorInitializationContext context) {
 
     descriptors.add(WEAVER);
-  }
-
-  public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
 
     // Weaver URL
-    if(context.getProperty(WEAVER).isSet()) {
-      weaverUrl = context.getProperty(WEAVER).getValue();
-    } else {
+//    if(context.getProperty(WEAVER).isSet()) {
+//      weaverUrl = context.getProperty(WEAVER).getValue();
+//    } else {
       weaverUrl = NiFiProperties.getInstance().get(WeaverProperties.URL).toString();
-    }
+//    }
 
     weaver = new Weaver();
     try {
@@ -60,6 +57,9 @@ public abstract class WeaverProcessor extends AbstractProcessor {
     } catch (URISyntaxException e) {
       throw new ProcessException(e);
     }
+  }
+
+  public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
   }
 
   @Override

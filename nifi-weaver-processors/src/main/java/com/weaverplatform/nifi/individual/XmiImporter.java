@@ -8,7 +8,6 @@ import org.apache.nifi.annotation.behavior.WritesAttributes;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
-import org.apache.nifi.logging.ProcessorLog;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
@@ -53,7 +52,7 @@ public class XmiImporter extends DatasetProcessor {
       }
     });
 
-    weaver.close();
+//    weaver.close();
 
     session.transfer(flowFile, ORIGINAL);
   }

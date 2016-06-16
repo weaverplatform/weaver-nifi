@@ -174,7 +174,7 @@ public class GetIdFromProperty extends FlowFileProcessor {
       throw new ProcessException("Either subject or object should be empty for GetIdeFromProperty.");
     }
 
-    weaver.close();
+//    weaver.close();
   }
   
   private void sendFoundId(ProcessSession session, String attributeName, String id) {
