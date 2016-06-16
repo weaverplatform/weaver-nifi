@@ -49,7 +49,11 @@ public class CreateIndividualTest {
   @Test
   public void testIndividualCreationWithName() {
     Properties props = System.getProperties();
-    props.setProperty("nifi.properties.file.path", "/Users/mohamad/Dev/Coentunnel Backbone/nifi-0.6.1/./conf/nifi.properties");
+    props.setProperty("nifi.properties.file.path", new File(getClass().getClassLoader().getResource("nifi.properties").getFile()).toString());
+
+    System.out.println(new File(getClass().getClassLoader().getResource("nifi.properties").getFile()).toString());
+    
+    // "/Users/mohamad/Dev/Coentunnel Backbone/nifi-0.6.1/./conf/nifi.properties"
 
     InputStream cont = new ByteArrayInputStream("Test".getBytes());
 
