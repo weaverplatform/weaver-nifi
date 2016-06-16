@@ -67,9 +67,9 @@ public class CreateViewTest {
     Map<String, Object> attributes = new HashMap<>();
     attributes.put("name", "Dataset");
     Entity dataset = weaver.add(attributes, EntityType.DATASET, WEAVER_DATASET);
-    
+                              
     // Give it the minimal collections it needs to be qualified as a valid view
-    dataset.linkEntity(RelationKeys.VIEWS, weaver.collection());
+    dataset.linkEntity("views", weaver.collection());
     dataset.linkEntity(RelationKeys.OBJECTS, weaver.collection());
   }
   

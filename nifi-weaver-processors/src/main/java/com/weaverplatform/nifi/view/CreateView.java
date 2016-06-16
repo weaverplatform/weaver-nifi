@@ -79,7 +79,7 @@ public class CreateView extends DatasetProcessor {
 
     // Give it the minimal collections it needs to be qualified as a valid view
     view.linkEntity("filters", weaver.collection());
-//    view.linkEntity("objects", weaver.collection());     //TODO a view slouldnt have this right??
+    view.linkEntity("objects", weaver.collection());
     
     // Close connection
     weaver.close();
