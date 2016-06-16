@@ -72,7 +72,7 @@ public class CreateFilterTest {
     dataset = weaver.add(attributes, EntityType.DATASET, WEAVER_DATASET);
     
     // Give it the minimal collections it needs to be qualified as a valid view
-    dataset.linkEntity(RelationKeys.VIEWS, weaver.collection());
+    dataset.linkEntity("views", weaver.collection());
     dataset.linkEntity(RelationKeys.OBJECTS, weaver.collection());
     
     // Create view
@@ -81,7 +81,7 @@ public class CreateFilterTest {
     view = weaver.add(attributes, EntityType.VIEW);
 
     // Give it the minimal collections it needs to be qualified as a valid view
-    view.linkEntity(RelationKeys.FILTERS, weaver.collection());
+    view.linkEntity("filters", weaver.collection());
   }
   
 
