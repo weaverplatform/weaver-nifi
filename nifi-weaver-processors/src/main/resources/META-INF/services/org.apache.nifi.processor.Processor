@@ -22,3 +22,4 @@ com.weaverplatform.nifi.individual.WipeProcessor
 com.weaverplatform.nifi.individual.XmiImporter
 com.weaverplatform.nifi.view.CreateView
 com.weaverplatform.nifi.view.CreateFilter
+com.weaverplatform.nifi.view.CreateFilterCondition
