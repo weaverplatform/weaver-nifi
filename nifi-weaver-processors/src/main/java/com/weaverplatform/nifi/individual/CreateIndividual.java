@@ -1,9 +1,7 @@
 package com.weaverplatform.nifi.individual;
 
-import com.weaverplatform.sdk.Entity;
-import com.weaverplatform.sdk.EntityType;
-import com.weaverplatform.sdk.RelationKeys;
-import com.weaverplatform.sdk.ShallowEntity;
+import com.weaverplatform.sdk.*;
+import com.weaverplatform.sdk.json.request.UpdateEntityAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
@@ -61,6 +59,19 @@ public class CreateIndividual extends DatasetProcessor {
     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
     .build();
 
+  public static final PropertyDescriptor IS_ADDIFYING = new PropertyDescriptor
+      .Builder().name("Is Addifying?")
+      .description("If this attribute is set, the object or subject entity will be " +
+          "created if it does not already exist. (leave this field empty to disallow " +
+          "this behaviour)")
+      .required(false)
+      .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+      .build();
+
+  private Entity individual;
+  private Entity entityProperties;
+  private Entity entityAnnotations;
+
   @Override
   protected void init(final ProcessorInitializationContext context) {
     
@@ -71,6 +82,7 @@ public class CreateIndividual extends DatasetProcessor {
     descriptors.add(NAME_STATIC);
     descriptors.add(NAME_PREDICATE_STATIC);
     descriptors.add(NAME_PREFIX);
+    descriptors.add(IS_ADDIFYING);
     this.properties = Collections.unmodifiableList(descriptors);
 
 
@@ -84,62 +96,93 @@ public class CreateIndividual extends DatasetProcessor {
     super.onTrigger(context, session);
 
     String id = idFromOptions(context, flowFile, true);
-
-    // Create entity by user attribute
-    Map<String, Object> attributes = new HashMap<>();
-    String name = valueFromOptions(context, flowFile, NAME_ATTRIBUTE, NAME_STATIC, "Unnamed");
-    
-    // Check for prefix
-    if(context.getProperty(NAME_PREFIX).isSet()) {
-      name = context.getProperty(NAME_PREFIX).getValue() + name;
-    }
-    
-    
-    attributes.put("name", name);
-
-    log.info("create individual with name " + name);
-    log.info("create individual with id "+id);
-
-    Entity individual = weaver.add(attributes, EntityType.INDIVIDUAL, id);
-    
-    // Attach to dataset
-    datasetObjects.linkEntity(id, individual);
-
-    Entity entityProperties = weaver.collection();
-    individual.linkEntity(RelationKeys.PROPERTIES, entityProperties);
-    
-    
-    Entity entityAnnotations = weaver.collection();
-    individual.linkEntity(RelationKeys.ANNOTATIONS, entityAnnotations);
-    
-    // If a name predicate is set, create a name predicate and a name property
+    String name = getName(context);
     PropertyValue predicateProperty = context.getProperty(NAME_PREDICATE_STATIC);
-    if(predicateProperty.isSet()) {
-      
-      String predicate = context.getProperty(NAME_PREDICATE_STATIC).getValue();
+    String predicate = context.getProperty(NAME_PREDICATE_STATIC).getValue();
 
-      // Make name annotation
-      HashMap<String, Object> nameAnnotationAttributes = new HashMap<>();
-      nameAnnotationAttributes.put("label", predicate);
-      nameAnnotationAttributes.put("celltype", "string");
-      nameAnnotationAttributes.put("datatype", "xsd:string");
-      Entity nameAnnotation = weaver.add(nameAnnotationAttributes, EntityType.ANNOTATION);
-      entityAnnotations.linkEntity(nameAnnotation.getId(), nameAnnotation);
+    // Should we be prepared for the possibility that this entity has already been created.
+    boolean isAddifying = context.getProperty(IS_ADDIFYING).isSet();
 
-      // Make a name property
-      Map<String, ShallowEntity> relations = new HashMap<>();
-      relations.put("subject", individual);
-      relations.put("annotation", nameAnnotation);
+    // Create without checking for entities prior existence
+    if(!isAddifying) {
 
-      HashMap<String, Object> propertyAttributes = new HashMap<>();
-      propertyAttributes.put("predicate", predicate);
-      propertyAttributes.put("object", name);
+      Map<String, Object> attributes = new HashMap<>();
+      attributes.put("name", name);
 
-      Entity nameProperty = weaver.add(propertyAttributes, EntityType.VALUE_PROPERTY, UUID.randomUUID().toString(), relations);
-      entityProperties.linkEntity(nameProperty.getId(), nameProperty);
-      
+      createIndividual(id, attributes);
+
+      // If a name predicate is set, create a name predicate and a name property
+      if(predicateProperty.isSet()) {
+        createNameValueProperty(predicate, name);
+      }
+
+      // Attach to dataset
+      datasetObjects.linkEntity(id, individual);
+
+    // Check to see whether it exists before creation
+    } else {
+      individual = weaver.get(id);
+
+      // It already exists, check it's attributes.
+      if(EntityType.INDIVIDUAL.equals(individual.getType())) {
+
+        // Check if name attribute is set
+        if(!individual.getAttributes().containsKey("name")){
+          weaver.updateEntityAttribute(new UpdateEntityAttribute(individual.getId(), "name", name));
+
+        }
+        if(!name.equals(individual.getAttributes().get("name"))) {
+          individual.updateEntityWithValue("name", name);
+        }
+
+        // Check if a name property needs to be added
+        boolean predicateIsSet = false;
+        if(predicateProperty.isSet()) {
+          for(ShallowEntity shallowEntityProperty : entityProperties.getRelations().values()) {
+            Entity entityProperty = weaver.get(shallowEntityProperty.getId());
+            try {
+              if(entityProperty.getAttributeValue("predicate").equals(predicate)) {
+
+                if(!entityProperty.getAttributeValue("object").equals(name)) {
+                  entityProperty.updateEntityWithValue("object", name);
+                }
+
+                predicateIsSet = true;
+                break;
+              }
+            } catch (EntityAttributeNotFoundException e) {}
+          }
+
+          if(!predicateIsSet) {
+            createNameValueProperty(predicate, name);
+          }
+        }
+
+        // Check if it is attached to a dataset
+        if(!datasetObjects.getRelations().keySet().contains(individual.getId())) {
+          datasetObjects.linkEntity(id, individual);
+        }
+
+      // It does not exist yet
+      } else {
+        
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put("name", name);
+
+        createIndividual(id, attributes);
+
+        // If a name predicate is set, create a name predicate and a name property
+        if(predicateProperty.isSet()) {
+          createNameValueProperty(predicate, name);
+        }
+
+        // Attach to dataset
+        datasetObjects.linkEntity(id, individual);
+
+      }
+
     }
-    
+
     weaver.close();
 
     if(context.getProperty(ATTRIBUTE_NAME_FOR_ID).isSet()) {
@@ -147,5 +190,49 @@ public class CreateIndividual extends DatasetProcessor {
       flowFile = session.putAttribute(flowFile, attributeNameForId, id);
     }
     session.transfer(flowFile, ORIGINAL);
+  }
+
+  private void createNameValueProperty(String predicate, String name) {
+
+    // Make name annotation
+    HashMap<String, Object> nameAnnotationAttributes = new HashMap<>();
+    nameAnnotationAttributes.put("label", predicate);
+    nameAnnotationAttributes.put("celltype", "string");
+    nameAnnotationAttributes.put("datatype", "xsd:string");
+    Entity nameAnnotation = weaver.add(nameAnnotationAttributes, EntityType.ANNOTATION);
+    entityAnnotations.linkEntity(nameAnnotation.getId(), nameAnnotation);
+
+    // Make a name property
+    Map<String, ShallowEntity> relations = new HashMap<>();
+    relations.put("subject", individual);
+    relations.put("annotation", nameAnnotation);
+
+    HashMap<String, Object> propertyAttributes = new HashMap<>();
+    propertyAttributes.put("predicate", predicate);
+    propertyAttributes.put("object", name);
+
+    Entity nameProperty = weaver.add(propertyAttributes, EntityType.VALUE_PROPERTY, UUID.randomUUID().toString(), relations);
+    entityProperties.linkEntity(nameProperty.getId(), nameProperty);
+  }
+
+  private String getName(ProcessContext context) {
+    String name = valueFromOptions(context, flowFile, NAME_ATTRIBUTE, NAME_STATIC, "Unnamed");
+
+    // Check for prefix
+    if(context.getProperty(NAME_PREFIX).isSet()) {
+      name = context.getProperty(NAME_PREFIX).getValue() + name;
+    }
+    return name;
+  }
+
+  private void createIndividual(String id, Map<String, Object> attributes) {
+
+    individual = weaver.add(attributes, EntityType.INDIVIDUAL, id);
+
+    entityProperties = weaver.collection();
+    individual.linkEntity(RelationKeys.PROPERTIES, entityProperties);
+
+    entityAnnotations = weaver.collection();
+    individual.linkEntity(RelationKeys.ANNOTATIONS, entityAnnotations);
   }
 }

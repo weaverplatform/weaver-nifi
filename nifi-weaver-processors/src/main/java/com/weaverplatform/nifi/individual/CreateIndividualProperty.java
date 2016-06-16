@@ -73,7 +73,14 @@ public class CreateIndividualProperty extends FlowFileProcessor {
     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
     .build();
 
-
+  public static final PropertyDescriptor IS_ADDIFYING = new PropertyDescriptor
+      .Builder().name("Is Addifying?")
+      .description("If this attribute is set, the object or subject entity will be " +
+          "created if it does not already exist. (leave this field empty to disallow " +
+          "this behaviour)")
+      .required(false)
+      .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+      .build();
 
   @Override
   protected void init(final ProcessorInitializationContext context) {
@@ -86,6 +93,7 @@ public class CreateIndividualProperty extends FlowFileProcessor {
     descriptors.add(PREDICATE_STATIC);
     descriptors.add(OBJECT_ATTRIBUTE);
     descriptors.add(OBJECT_STATIC);
+    descriptors.add(IS_ADDIFYING);
     this.properties = Collections.unmodifiableList(descriptors);
 
 
@@ -98,56 +106,66 @@ public class CreateIndividualProperty extends FlowFileProcessor {
 
     super.onTrigger(context, session);
 
-    String subject = valueFromOptions(context, flowFile, SUBJECT_ATTRIBUTE, SUBJECT_STATIC, null);
+    String subjectId = valueFromOptions(context, flowFile, SUBJECT_ATTRIBUTE, SUBJECT_STATIC, null);
     String predicate = valueFromOptions(context, flowFile, PREDICATE_ATTRIBUTE, PREDICATE_STATIC, null);
-    String object = valueFromOptions(context, flowFile, OBJECT_ATTRIBUTE, OBJECT_STATIC, null);
+    String objectId = valueFromOptions(context, flowFile, OBJECT_ATTRIBUTE, OBJECT_STATIC, null);
 
-    log.info("Creating Individual Property with SUBJECT: " + subject + ", OBJECT: " + object +  ", and PREDICATE: " + predicate + ".");
+    log.info("Creating Individual Property with SUBJECT: " + subjectId + ", OBJECT: " + objectId +  ", and PREDICATE: " + predicate + ".");
 
-    try {
+    // Get the parent object from weaver
+    Entity subjectEntity = weaver.get(subjectId);
 
-      // Get the parent object from weaver
-      Entity individual = weaver.get(subject);
+    if(context.getProperty(IS_ADDIFYING).isSet() &&
+      !EntityType.INDIVIDUAL.equals(subjectEntity.getType())) {
 
-      // Create child attributes
-      Map<String, Object> entityAttributes = new HashMap<>();
-      entityAttributes.put("predicate", predicate);
-      
-      // Find the object
-      Entity objectEntity = weaver.get(object);
-      if(objectEntity == null || !(EntityType.INDIVIDUAL.equals(objectEntity.getType()))) {
-        log.error("Object entity could not be found in Weaver.");
-        throw new ProcessException("Object entity could not be found in Weaver.");
-      }
+      //Create an empty parent object if one does not already exist
+      log.info("Subject entity could not be found in Weaver. Creating..");
 
-      Map<String, ShallowEntity> relations = new HashMap<>();
-      relations.put(RelationKeys.SUBJECT, individual);
-      relations.put(RelationKeys.OBJECT, objectEntity);
-      
-      String id = idFromOptions(context, flowFile, true);
-      Entity individualProperty = weaver.add(entityAttributes, EntityType.INDIVIDUAL_PROPERTY, id, relations);
+      Map<String, Object> attributes = new HashMap<>();
+      subjectEntity = createIndividual(subjectId, attributes);
 
-      // Fetch parent collection
-      ShallowEntity shallowCollection = individual.getRelations().get(RelationKeys.PROPERTIES);
-
-      Entity entityProperties = weaver.get(shallowCollection.getId());
-
-      // Link individual to collection
-      entityProperties.linkEntity(individualProperty.getId(), individualProperty);
-
-      weaver.close();
-  
-      if(context.getProperty(ATTRIBUTE_NAME_FOR_ID).isSet()) {
-        String attributeNameForId = context.getProperty(ATTRIBUTE_NAME_FOR_ID).getValue();
-        flowFile = session.putAttribute(flowFile, attributeNameForId, id);
-      }
-      session.transfer(flowFile, ORIGINAL);
-
-    } catch (IndexOutOfBoundsException e) {
-      throw new ProcessException(e);
-    } catch(NullPointerException e){
-      throw new ProcessException(e);
     }
+
+    // Create child attributes
+    Map<String, Object> entityAttributes = new HashMap<>();
+    entityAttributes.put("predicate", predicate);
+
+    // Find the object
+    Entity objectEntity = weaver.get(objectId);
+
+    if (context.getProperty(IS_ADDIFYING).isSet() &&
+      !EntityType.INDIVIDUAL.equals(objectEntity.getType())) {
+        log.info("Creating temporary entity..");
+
+      Map<String, Object> attributes = new HashMap<>();
+       objectEntity =  createIndividual(objectId, attributes);
+
+    }
+
+    Map<String, ShallowEntity> relations = new HashMap<>();
+    relations.put(RelationKeys.SUBJECT, subjectEntity);
+    relations.put(RelationKeys.OBJECT, objectEntity);
+
+    String id = idFromOptions(context, flowFile, true);
+
+    Entity individualProperty = weaver.add(entityAttributes, EntityType.INDIVIDUAL_PROPERTY, id, relations);
+
+    // Fetch parent collection
+    ShallowEntity shallowCollection = subjectEntity.getRelations().get(RelationKeys.PROPERTIES);
+    Entity entityProperties = weaver.get(shallowCollection.getId());
+
+    // Link individual to collection
+    entityProperties.linkEntity(individualProperty.getId(), individualProperty);
+
+
+    weaver.close();
+
+    if (context.getProperty(ATTRIBUTE_NAME_FOR_ID).isSet()) {
+      String attributeNameForId = context.getProperty(ATTRIBUTE_NAME_FOR_ID).getValue();
+      flowFile = session.putAttribute(flowFile, attributeNameForId, id);
+    }
+    session.transfer(flowFile, ORIGINAL);
+
   }
 
   @Override
@@ -162,4 +180,16 @@ public class CreateIndividualProperty extends FlowFileProcessor {
       .build();
   }
 
+  private Entity createIndividual(String id, Map<String, Object> attributes) {
+
+    Entity individual = weaver.add(attributes, EntityType.INDIVIDUAL, id);
+
+    Entity entityProperties = weaver.collection();
+    individual.linkEntity(RelationKeys.PROPERTIES, entityProperties);
+
+    Entity entityAnnotations = weaver.collection();
+    individual.linkEntity(RelationKeys.ANNOTATIONS, entityAnnotations);
+
+    return individual;
+  }
 }
