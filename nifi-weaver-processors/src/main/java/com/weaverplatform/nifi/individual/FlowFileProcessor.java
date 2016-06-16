@@ -1,7 +1,6 @@
 package com.weaverplatform.nifi.individual;
 
 import org.apache.nifi.flowfile.FlowFile;
-import org.apache.nifi.logging.ProcessorLog;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
@@ -14,13 +13,15 @@ import org.apache.nifi.processor.exception.ProcessException;
 public abstract class FlowFileProcessor extends EntityProcessor {
 
   FlowFile flowFile;
-
-
+  
   public static final Relationship ORIGINAL = new Relationship.Builder()
       .name("Original Content")
       .description("Relationship to send original content to to.")
       .build();
 
+  public FlowFile getFlowFile() {
+    return flowFile;
+  }
 
   @Override
   protected void init(final ProcessorInitializationContext context) {
