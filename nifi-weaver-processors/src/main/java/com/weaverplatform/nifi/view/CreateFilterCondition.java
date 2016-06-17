@@ -51,10 +51,10 @@ public class CreateFilterCondition extends DatasetProcessor {
     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
     .build();
   
-  public static final PropertyDescriptor INDIVIDUAL_STATIC = new PropertyDescriptor
-    .Builder().name("Individual Static")
-    .description("Individual to which this condition should point to.")
-    .required(false)
+  public static final PropertyDescriptor CONDITION_PATTERN = new PropertyDescriptor
+    .Builder().name("Condition Pattern")
+    .description("Depending on the condition type this value is used to test the condition.")
+    .required(true)
     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
     .build();
 
@@ -72,7 +72,7 @@ public class CreateFilterCondition extends DatasetProcessor {
     descriptors.add(FILTER_ID_ATTRIBUTE);
     descriptors.add(CONDITION_TYPE_STATIC);
     descriptors.add(OPERATION_STATIC);
-    descriptors.add(INDIVIDUAL_STATIC);
+    descriptors.add(CONDITION_PATTERN);
     descriptors.add(ATTRIBUTE_NAME_FOR_CONDITION_ID);
     
     this.properties = Collections.unmodifiableList(descriptors);
@@ -93,18 +93,36 @@ public class CreateFilterCondition extends DatasetProcessor {
     }
     String filterId = flowFile.getAttribute(context.getProperty(FILTER_ID_ATTRIBUTE).getValue());
     Entity filter = weaver.get(filterId);
+    
+    String conditionType = context.getProperty(CONDITION_TYPE_STATIC).getValue();
 
     // Prepare condition attributes
     Map<String, Object> attributes = new HashMap<>();
-    attributes.put("conditiontype", context.getProperty(CONDITION_TYPE_STATIC).getValue());
+    attributes.put("conditiontype", conditionType);
     attributes.put("operation",     context.getProperty(OPERATION_STATIC).getValue());
 
+    
+    
+    if("string".equals(conditionType)) {
+      // Link to the string   
+      attributes.put("value", context.getProperty(OPERATION_STATIC).getValue());
+    }
+    
+    else if("individual".equals(conditionType)) {
+      // Link to the individual   
+      attributes.put("individual", context.getProperty(OPERATION_STATIC).getValue());
+    }
+    
+    else if("view".equals(conditionType)) {
+      // Link to the view   
+      attributes.put("view", context.getProperty(OPERATION_STATIC).getValue());
+    }
+    else {
+      throw new ProcessException("No supported conditiontype set (string, individual or view)!");
+    }
+    
     // Create condition
     Entity condition = weaver.add(attributes, "$CONDITION");
-    
-    // Link to the individual
-    Entity individual = weaver.get(context.getProperty(INDIVIDUAL_STATIC).getValue());
-    condition.linkEntity("individual", individual);
     
     // Attach to filter conditions
     Entity conditions = weaver.get(filter.getRelations().get("conditions").getId());

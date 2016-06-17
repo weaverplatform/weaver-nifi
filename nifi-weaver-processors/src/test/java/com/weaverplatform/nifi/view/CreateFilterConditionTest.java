@@ -127,7 +127,7 @@ public class CreateFilterConditionTest {
     testRunner.setProperty(CreateFilterCondition.FILTER_ID_ATTRIBUTE, "filterId");
     testRunner.setProperty(CreateFilterCondition.CONDITION_TYPE_STATIC, "individual");
     testRunner.setProperty(CreateFilterCondition.OPERATION_STATIC, "this-individual");
-    testRunner.setProperty(CreateFilterCondition.INDIVIDUAL_STATIC, "weav:Tree");
+    testRunner.setProperty(CreateFilterCondition.CONDITION_PATTERN, "weav:Tree");
     testRunner.setProperty(CreateFilterCondition.ATTRIBUTE_NAME_FOR_CONDITION_ID, "conditionId");
 
     // Create flowFile with content
