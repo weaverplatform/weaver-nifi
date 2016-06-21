@@ -104,44 +104,28 @@ public class CreateIndividualProperty extends FlowFileProcessor {
     super.onTrigger(context, session);
     Weaver weaver = getWeaver();
 
+    String id = idFromOptions(context, flowFile, true);
+    
     String subjectId = valueFromOptions(context, flowFile, SUBJECT_ATTRIBUTE, SUBJECT_STATIC, null);
     String predicate = valueFromOptions(context, flowFile, PREDICATE_ATTRIBUTE, PREDICATE_STATIC, null);
     String objectId = valueFromOptions(context, flowFile, OBJECT_ATTRIBUTE, OBJECT_STATIC, null);
-    String id = idFromOptions(context, flowFile, true);
 
     log.info("Creating Individual Property with SUBJECT: " + subjectId + ", OBJECT: " + objectId +  ", and PREDICATE: " + predicate + ".");
 
-    // Get the parent object from weaver
-    Entity subjectEntity = weaver.get(subjectId);
+    // Should we be prepared for the possibility that this entity has already been created.
+    boolean isAddifying = context.getProperty(IS_ADDIFYING).isSet();
 
-    if (subjectId != null && objectId != null) {
+    // Create without checking for entities prior existence
+    if(!isAddifying) {
 
-      if (context.getProperty(IS_ADDIFYING).isSet() &&
-          !EntityType.INDIVIDUAL.equals(subjectEntity.getType())) {
-
-        //Create an empty parent object if one does not already exist
-        log.info("Subject entity could not be found in Weaver. Creating..");
-
-        Map<String, Object> attributes = new HashMap<>();
-        subjectEntity = createIndividual(subjectId, attributes);
-
-      }
-
-      // Create child attributes
-      Map<String, Object> entityAttributes = new HashMap<>();
-      entityAttributes.put("predicate", predicate);
+      // Get the parent object from weaver
+      Entity subjectEntity = weaver.get(subjectId);
 
       // Find the object
       Entity objectEntity = weaver.get(objectId);
 
-      if (context.getProperty(IS_ADDIFYING).isSet() &&
-          !EntityType.INDIVIDUAL.equals(objectEntity.getType())) {
-        log.info("Creating temporary entity..");
-
-        Map<String, Object> attributes = new HashMap<>();
-        objectEntity = createIndividual(objectId, attributes);
-
-      }
+      Map<String, Object> entityAttributes = new HashMap<>();
+      entityAttributes.put("predicate", predicate);
 
       Map<String, ShallowEntity> relations = new HashMap<>();
       relations.put(RelationKeys.SUBJECT, subjectEntity);
@@ -156,11 +140,50 @@ public class CreateIndividualProperty extends FlowFileProcessor {
       // Link individual to collection
       entityProperties.linkEntity(individualProperty.getId(), individualProperty);
 
+
+    
     } else {
 
-      log.warn("Attempted to create Individual property without supplying a subject and object");
+      // Get the parent object from weaver
+      Entity subjectEntity = weaver.get(subjectId);
+      if(!EntityType.INDIVIDUAL.equals(subjectEntity.getType())) {
 
+
+        Map<String, Object> attributes = new HashMap<>();
+        subjectEntity = createIndividual(subjectId, attributes);
+
+      }
+
+      // Find the object
+      Entity objectEntity = weaver.get(objectId);
+      if (!EntityType.INDIVIDUAL.equals(objectEntity.getType())) {
+
+
+        Map<String, Object> attributes = new HashMap<>();
+        objectEntity =  createIndividual(objectId, attributes);
+
+      }
+
+      Map<String, Object> entityAttributes = new HashMap<>();
+      entityAttributes.put("predicate", predicate);
+
+      Map<String, ShallowEntity> relations = new HashMap<>();
+      relations.put(RelationKeys.SUBJECT, subjectEntity);
+      relations.put(RelationKeys.OBJECT, objectEntity);
+
+
+      Entity individualProperty = weaver.add(entityAttributes, EntityType.INDIVIDUAL_PROPERTY, id, relations);
+
+      // Fetch parent collection
+      ShallowEntity shallowCollection = subjectEntity.getRelations().get(RelationKeys.PROPERTIES);
+      Entity entityProperties = weaver.get(shallowCollection.getId());
+
+      // Link individual to collection
+      entityProperties.linkEntity(individualProperty.getId(), individualProperty);
+      
     }
+
+
 
 //    weaver.close();
 

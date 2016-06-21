@@ -129,10 +129,9 @@ public class CreateIndividual extends DatasetProcessor {
 
         // Check if name attribute is set
         if(!individual.getAttributes().containsKey("name")){
-          weaver.updateEntityAttribute(new UpdateEntityAttribute(individual.getId(), "name", name));
+          weaver.updateEntityAttribute(new UpdateEntityAttribute(new ShallowEntity(individual.getId(), individual.getType()), "name", new ShallowValue(name,"")));
 
-        }
-        if(!name.equals(individual.getAttributes().get("name"))) {
+        } else if(!name.equals(individual.getAttributes().get("name"))) {
           individual.updateEntityWithValue("name", name);
         }
 
