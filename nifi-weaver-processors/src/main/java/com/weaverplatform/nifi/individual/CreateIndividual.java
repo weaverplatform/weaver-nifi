@@ -98,17 +98,21 @@ public class CreateIndividual extends DatasetProcessor {
 
     String id = idFromOptions(context, flowFile, true);
     String name = getName(context);
+    String source = getSource(context, flowFile);
     PropertyValue predicateProperty = context.getProperty(NAME_PREDICATE_STATIC);
     String predicate = context.getProperty(NAME_PREDICATE_STATIC).getValue();
 
     // Should we be prepared for the possibility that this entity has already been created.
     boolean isAddifying = context.getProperty(IS_ADDIFYING).isSet();
 
+
+
     // Create without checking for entities prior existence
     if(!isAddifying) {
 
       Map<String, Object> attributes = new HashMap<>();
       attributes.put("name", name);
+      attributes.put("source", source);
 
       createIndividual(id, attributes);
 
@@ -130,6 +134,7 @@ public class CreateIndividual extends DatasetProcessor {
         // Check if name attribute is set
         if(!individual.getAttributes().containsKey("name")){
           weaver.updateEntityAttribute(new UpdateEntityAttribute(new ShallowEntity(individual.getId(), individual.getType()), "name", new ShallowValue(name,"")));
+          weaver.updateEntityAttribute(new UpdateEntityAttribute(new ShallowEntity(individual.getId(), individual.getType()), "source", new ShallowValue(source,"")));
 
         } else if(!name.equals(individual.getAttributes().get("name"))) {
           individual.updateEntityWithValue("name", name);
@@ -168,6 +173,7 @@ public class CreateIndividual extends DatasetProcessor {
         
         Map<String, Object> attributes = new HashMap<>();
         attributes.put("name", name);
+        attributes.put("source", source);
 
         createIndividual(id, attributes);
 

@@ -37,6 +37,20 @@ public abstract class EntityProcessor extends WeaverProcessor {
       .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
       .build();
 
+  public static final PropertyDescriptor SOURCE_ATTRIBUTE = new PropertyDescriptor
+      .Builder().name("Source Attribute")
+      .description("Set the source of the Entity (can be any string).")
+      .required(false)
+      .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+      .build();
+
+  public static final PropertyDescriptor SOURCE_STATIC = new PropertyDescriptor
+      .Builder().name("Source Attribute")
+      .description("Set the source of the Entity (can be any string).")
+      .required(false)
+      .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+      .build();
+
 
 
   @Override
@@ -47,6 +61,8 @@ public abstract class EntityProcessor extends WeaverProcessor {
     descriptors.add(INDIVIDUAL_ATTRIBUTE);
     descriptors.add(INDIVIDUAL_STATIC);
     descriptors.add(ATTRIBUTE_NAME_FOR_ID);
+    descriptors.add(SOURCE_ATTRIBUTE);
+    descriptors.add(SOURCE_STATIC);
 
   }
 
@@ -55,7 +71,11 @@ public abstract class EntityProcessor extends WeaverProcessor {
     
     super.onTrigger(context, session);
 
-  }         
+  }     
+  
+  public String getSource(ProcessContext context, FlowFile flowFile) {
+    return valueFromOptions(context, flowFile, SOURCE_ATTRIBUTE, SOURCE_STATIC, "unset");
+  }
   
   
   public String idFromOptions(ProcessContext context, FlowFile flowFile, boolean createRandomFallback) throws ProcessException {

@@ -45,14 +45,14 @@ public class XmiImporter extends DatasetProcessor {
       @Override
       public void process(InputStream inputStream) throws IOException {
 
-        ImportXmi importXmi = new ImportXmi(weaverUrl, datasetId);
+        ImportXmi importXmi = new ImportXmi(getWeaver(), datasetId);
         importXmi.readFromInputStream(inputStream);
         importXmi.run();
 
       }
     });
 
-//    weaver.close();
+//    getWeaver().close();
 
     session.transfer(flowFile, ORIGINAL);
   }
