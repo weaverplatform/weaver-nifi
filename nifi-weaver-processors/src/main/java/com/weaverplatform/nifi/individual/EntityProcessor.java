@@ -45,7 +45,7 @@ public abstract class EntityProcessor extends WeaverProcessor {
       .build();
 
   public static final PropertyDescriptor SOURCE_STATIC = new PropertyDescriptor
-      .Builder().name("Source Attribute")
+      .Builder().name("Source Static")
       .description("Set the source of the Entity (can be any string).")
       .required(false)
       .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
