@@ -1,5 +1,6 @@
 package com.weaverplatform.nifi.individual;
 
+import com.weaverplatform.nifi.util.WeaverProperties;
 import com.weaverplatform.sdk.*;
 import com.weaverplatform.sdk.json.request.UpdateEntityAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
@@ -16,6 +17,7 @@ import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
+import org.apache.nifi.util.NiFiProperties;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -27,7 +29,9 @@ import java.util.concurrent.atomic.AtomicReference;
 @SeeAlso({})
 @ReadsAttributes({@ReadsAttribute(attribute="", description="")})
 @WritesAttributes({@WritesAttribute(attribute="", description="")})
-public class CreateIndividual extends DatasetProcessor {
+public class CreateIndividual extends FlowFileProcessor {
+
+  Entity datasetObjects;
   
   public static final PropertyDescriptor NAME_ATTRIBUTE = new PropertyDescriptor
     .Builder().name("Name Attribute")
@@ -65,7 +69,7 @@ public class CreateIndividual extends DatasetProcessor {
   @Override
   protected void init(final ProcessorInitializationContext context) {
     
-    super.init(context); 
+    super.init(context);
     
     
     descriptors.add(NAME_ATTRIBUTE);
@@ -81,6 +85,12 @@ public class CreateIndividual extends DatasetProcessor {
     
     super.onTrigger(context, session);
     Weaver weaver = getWeaver();
+
+
+    String datasetId = NiFiProperties.getInstance().get(WeaverProperties.DATASET).toString();
+
+    Entity dataset = weaver.get(datasetId);
+    datasetObjects = weaver.get(dataset.getRelations().get("objects").getId());
 
     String id = idFromOptions(context, flowFile, true);
     String name = getName(context);

@@ -1,6 +1,7 @@
 package com.weaverplatform.nifi.individual;
 
 import com.weaverplatform.importer.xmi.ImportXmi;
+import com.weaverplatform.nifi.util.WeaverProperties;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
@@ -13,6 +14,7 @@ import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.io.InputStreamCallback;
+import org.apache.nifi.util.NiFiProperties;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,12 +26,16 @@ import java.util.concurrent.atomic.AtomicReference;
 @SeeAlso({})
 @ReadsAttributes({@ReadsAttribute(attribute="", description="")})
 @WritesAttributes({@WritesAttribute(attribute="", description="")})
-public class XmiImporter extends DatasetProcessor {
+public class XmiImporter extends FlowFileProcessor {
+
+  String datasetId;
 
   @Override
   protected void init(final ProcessorInitializationContext context) {
 
     super.init(context);
+
+
 
     this.properties = Collections.unmodifiableList(descriptors);
     this.relationships = new AtomicReference<>(relationshipSet);
@@ -40,7 +46,9 @@ public class XmiImporter extends DatasetProcessor {
 
     super.onTrigger(context, session);
 
-      session.read(flowFile, new InputStreamCallback() {
+    datasetId = NiFiProperties.getInstance().get(WeaverProperties.DATASET).toString();
+
+    session.read(flowFile, new InputStreamCallback() {
 
       @Override
       public void process(InputStream inputStream) throws IOException {

@@ -1,6 +1,6 @@
 package com.weaverplatform.nifi.view;
 
-import com.weaverplatform.nifi.individual.DatasetProcessor;
+import com.weaverplatform.nifi.individual.FlowFileProcessor;
 import com.weaverplatform.sdk.Entity;
 import com.weaverplatform.sdk.Weaver;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @SeeAlso({})
 @ReadsAttributes({@ReadsAttribute(attribute="", description="")})
 @WritesAttributes({@WritesAttribute(attribute="", description="")})
-public class CreateFilterCondition extends DatasetProcessor {
+public class CreateFilterCondition extends FlowFileProcessor {
 
   public static final PropertyDescriptor FILTER_ID_ATTRIBUTE = new PropertyDescriptor
     .Builder().name("Filter ID Attribute")
