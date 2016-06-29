@@ -1,6 +1,7 @@
 package com.weaverplatform.nifi.individual;
 
 import com.weaverplatform.sdk.*;
+import com.weaverplatform.sdk.json.request.UpdateEntityAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
@@ -42,6 +43,13 @@ public class CreateIndividual extends DatasetProcessor {
     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
     .build();
 
+  public static final PropertyDescriptor NAME_PREFIX = new PropertyDescriptor
+      .Builder().name("Name Static")
+      .description("Look for a FlowFile attribute to set the name.")
+      .required(false)
+      .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+      .build();
+
   public static final PropertyDescriptor IS_ADDIFYING = new PropertyDescriptor
       .Builder().name("Is Addifying?")
       .description("If this attribute is set, the object or subject entity will be " +
@@ -75,6 +83,7 @@ public class CreateIndividual extends DatasetProcessor {
     Weaver weaver = getWeaver();
 
     String id = idFromOptions(context, flowFile, true);
+    String name = getName(context);
     String source = getSource(context, flowFile);
 
     // Should we be prepared for the possibility that this entity has already been created.
@@ -109,7 +118,16 @@ public class CreateIndividual extends DatasetProcessor {
       }
 
     }
+    if(!name.equals("")) {
+      // Check if name attribute is set
+      if (!individual.getAttributes().containsKey("name")) {
+        weaver.updateEntityAttribute(new UpdateEntityAttribute(new ShallowEntity(individual.getId(), individual.getType()), "name", new ShallowValue(name, "")));
+        weaver.updateEntityAttribute(new UpdateEntityAttribute(new ShallowEntity(individual.getId(), individual.getType()), "source", new ShallowValue(source, "")));
 
+      } else if (!name.equals(individual.getAttributes().get("name"))) {
+        individual.updateEntityWithValue("name", name);
+      }
+    }
     session.transfer(flowFile, ORIGINAL);
   }
 
@@ -120,5 +138,15 @@ public class CreateIndividual extends DatasetProcessor {
 
     entityProperties = weaver.collection();
     individual.linkEntity(RelationKeys.PROPERTIES, entityProperties);
+  }
+
+  private String getName(ProcessContext context) {
+    String name = valueFromOptions(context, flowFile, NAME_ATTRIBUTE, NAME_STATIC, "Unnamed");
+
+    // Check for prefix
+    if(context.getProperty(NAME_PREFIX).isSet()) {
+      name = context.getProperty(NAME_PREFIX).getValue() + name;
+    }
+    return name;
   }
 }
