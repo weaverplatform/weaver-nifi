@@ -70,7 +70,7 @@ public class CreateView extends FlowFileProcessor {
     String datasetId = NiFiProperties.getInstance().get(WeaverProperties.DATASET).toString();
 
     Entity dataset = weaver.get(datasetId);
-    datasetViews = weaver.get(dataset.getRelations().get("views").getId());
+    datasetViews = weaver.get(dataset.getRelations().get("models").getId());
 
     ProcessorLog log  = this.getLogger();
     FlowFile flowFile = this.getFlowFile();

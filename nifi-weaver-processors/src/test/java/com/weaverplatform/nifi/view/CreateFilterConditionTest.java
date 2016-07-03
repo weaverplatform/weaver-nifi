@@ -83,7 +83,7 @@ public class CreateFilterConditionTest {
     view.linkEntity(RelationKeys.OBJECTS, weaver.collection());
 
     // Attach to dataset views
-    Entity views = weaver.get(dataset.getRelations().get("views").getId());
+    Entity views = weaver.get(dataset.getRelations().get("models").getId());
     views.linkEntity(view.getId(), view);
     
     // Create filter
@@ -160,8 +160,8 @@ public class CreateFilterConditionTest {
     
     // Load Condition
     Entity condition = weaver.get(conditionId);
-    assertEquals(condition.getAttributes().get("conditiontype"), "individual");
-    assertEquals(condition.getAttributes().get("operation"), "this-individual");
-    assertEquals(condition.getRelations().get("individual").getId(), individual.getId());
+    assertEquals("individual",       condition.getAttributes().get("conditiontype"));
+    assertEquals("this-individual",  condition.getAttributes().get("operation"));
+    assertEquals(individual.getId(), condition.getAttributes().get("individual"));
   }
 }

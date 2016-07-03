@@ -62,7 +62,7 @@ public class CreateIndividual extends FlowFileProcessor {
       .build();
 
   private Entity individual;
-  private Entity entityProperties;
+  private Entity propertiesCollection;
 
   @Override
   protected void init(final ProcessorInitializationContext context) {
@@ -101,6 +101,7 @@ public class CreateIndividual extends FlowFileProcessor {
     if(!isAddifying) {
 
       Map<String, Object> attributes = new HashMap<>();
+      attributes.put("name", name);
       attributes.put("source", source);
 
       createIndividual(id, attributes);
@@ -112,10 +113,11 @@ public class CreateIndividual extends FlowFileProcessor {
     } else {
       individual = weaver.get(id);
 
-      // It already exists, check it's attributes.
-      if(!EntityType.INDIVIDUAL.equals(individual.getType())) {
-        
+      // It doesn't exist yet
+      if (!EntityType.INDIVIDUAL.equals(individual.getType())) {
+
         Map<String, Object> attributes = new HashMap<>();
+        attributes.put("name", name);
         attributes.put("source", source);
 
         createIndividual(id, attributes);
@@ -123,17 +125,19 @@ public class CreateIndividual extends FlowFileProcessor {
         // Attach to dataset
         datasetObjects.linkEntity(id, individual);
 
-      }
+      // It exists, see what to update
+      } else {
 
-    }
-    if(!name.equals("")) {
-      // Check if name attribute is set
-      if (!individual.getAttributes().containsKey("name")) {
-        weaver.updateEntityAttribute(new UpdateEntityAttribute(new ShallowEntity(individual.getId(), individual.getType()), "name", new ShallowValue(name, "")));
-        weaver.updateEntityAttribute(new UpdateEntityAttribute(new ShallowEntity(individual.getId(), individual.getType()), "source", new ShallowValue(source, "")));
+        if (!"".equals(name)) {
 
-      } else if (!name.equals(individual.getAttributes().get("name"))) {
-        individual.updateEntityWithValue("name", name);
+          // Check if name attribute is set
+          if (!individual.getAttributes().containsKey("name") || !name.equals(individual.getAttributes().get("name"))) {
+
+            weaver.updateEntityAttribute(new UpdateEntityAttribute(new ShallowEntity(individual.getId(), individual.getType()), "name", new ShallowValue(name, "")));
+            weaver.updateEntityAttribute(new UpdateEntityAttribute(new ShallowEntity(individual.getId(), individual.getType()), "source", new ShallowValue(source, "")));
+
+          }
+        }
       }
     }
     session.transfer(flowFile, ORIGINAL);
@@ -143,9 +147,8 @@ public class CreateIndividual extends FlowFileProcessor {
     Weaver weaver = getWeaver();
 
     individual = weaver.add(attributes, EntityType.INDIVIDUAL, id);
-
-    entityProperties = weaver.collection();
-    individual.linkEntity(RelationKeys.PROPERTIES, entityProperties);
+    propertiesCollection = weaver.collection();
+    individual.linkEntity(RelationKeys.PROPERTIES, propertiesCollection);
   }
 
   private String getName(ProcessContext context) {

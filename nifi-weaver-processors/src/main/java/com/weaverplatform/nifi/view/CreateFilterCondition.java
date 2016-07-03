@@ -105,17 +105,17 @@ public class CreateFilterCondition extends FlowFileProcessor {
     
     if("string".equals(conditionType)) {
       // Link to the string   
-      attributes.put("value", context.getProperty(OPERATION_STATIC).getValue());
+      attributes.put("value", context.getProperty(CONDITION_PATTERN).getValue());
     }
     
     else if("individual".equals(conditionType)) {
       // Link to the individual   
-      attributes.put("individual", context.getProperty(OPERATION_STATIC).getValue());
+      attributes.put("individual", context.getProperty(CONDITION_PATTERN).getValue());
     }
     
     else if("view".equals(conditionType)) {
       // Link to the view   
-      attributes.put("view", context.getProperty(OPERATION_STATIC).getValue());
+      attributes.put("view", context.getProperty(CONDITION_PATTERN).getValue());
     }
     else {
       throw new ProcessException("No supported conditiontype set (string, individual or view)!");
