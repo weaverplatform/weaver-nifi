@@ -16,23 +16,31 @@
  */
 package com.weaverplatform.nifi;
 
+import com.google.common.io.Resources;
 import com.weaverplatform.nifi.individual.CreateIndividual;
+import com.weaverplatform.nifi.util.WeaverProperties;
 import com.weaverplatform.sdk.Entity;
 import com.weaverplatform.sdk.Weaver;
+import com.weaverplatform.sdk.model.Dataset;
 import com.weaverplatform.sdk.websocket.WeaverSocket;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessSession;
+import org.apache.nifi.util.NiFiProperties;
 import org.apache.nifi.util.TestRunner;
 import org.apache.nifi.util.TestRunners;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Date;
 import java.util.Properties;
 import java.util.UUID;
 
@@ -41,36 +49,75 @@ public class CreateIndividualTest {
 
   private TestRunner testRunner;
 
+  private Weaver weaver;
+  private static String WEAVER_URL;
+  private static String WEAVER_DATASET;
+
+  public static final int BATCH_NUM = 1000;
+
+  @BeforeClass
+  public static void beforeClass() throws IOException {
+
+    // Define property file for NiFi
+    Properties props = System.getProperties();
+    props.setProperty("nifi.properties.file.path", Resources.getResource("nifi.properties").getPath());
+
+    // Read test properties
+    Properties testProperties = new Properties();
+    testProperties.load(Resources.getResource("test.properties").openStream());
+    WEAVER_URL     = testProperties.get("weaver.url").toString();
+    WEAVER_DATASET = testProperties.get("weaver.global.dataset").toString();
+
+    // Set Nifi Weaver properties
+    NiFiProperties.getInstance().put(WeaverProperties.URL, WEAVER_URL);
+    NiFiProperties.getInstance().put(WeaverProperties.DATASET, WEAVER_DATASET);
+  }
+
   @Before
-  public void init() {
+  public void init() throws URISyntaxException {
+
+    // Wipe weaver database first
+    weaver = new Weaver();
+    weaver.connect(new WeaverSocket(new URI(WEAVER_URL)));
+    weaver.wipe();
+
+    // Create dataset
+    Entity dataset = new Dataset(weaver, WEAVER_DATASET).create();
+
+    System.out.println(new File(getClass().getClassLoader().getResource("nifi.properties").getFile()).toString());
+    Properties props = System.getProperties();
+    props.setProperty("nifi.properties.file.path", new File(getClass().getClassLoader().getResource("nifi.properties").getFile()).toString());
     testRunner = TestRunners.newTestRunner(CreateIndividual.class);
   }
 
   @Test
   public void testIndividualCreationWithName() {
-    Properties props = System.getProperties();
-    props.setProperty("nifi.properties.file.path", new File(getClass().getClassLoader().getResource("nifi.properties").getFile()).toString());
 
-    System.out.println(new File(getClass().getClassLoader().getResource("nifi.properties").getFile()).toString());
-    
-    // "/Users/mohamad/Dev/Coentunnel Backbone/nifi-0.6.1/./conf/nifi.properties"
+    long then = new Date().getTime();
 
-    InputStream cont = new ByteArrayInputStream("Test".getBytes());
+    int runsLeft = BATCH_NUM;
+    while(runsLeft-- > 0) {
 
-    ProcessSession session = testRunner.getProcessSessionFactory().createSession();
-    FlowFile flowFile = session.create();
-    flowFile = session.importFrom(cont, flowFile);
-    flowFile = session.putAttribute(flowFile, "id", UUID.randomUUID().toString());
-    flowFile = session.putAttribute(flowFile, "name", "Name is set");
+      InputStream cont = new ByteArrayInputStream("Test".getBytes());
 
-    testRunner.setProperty(CreateIndividual.INDIVIDUAL_ATTRIBUTE, "id");
-    testRunner.setProperty(CreateIndividual.NAME_ATTRIBUTE, "name");
+      ProcessSession session = testRunner.getProcessSessionFactory().createSession();
+      FlowFile flowFile = session.create();
+      flowFile = session.importFrom(cont, flowFile);
+      flowFile = session.putAttribute(flowFile, "id", UUID.randomUUID().toString());
+      flowFile = session.putAttribute(flowFile, "name", "Name is set");
 
-    // Add the flowfile to the runner
-    testRunner.enqueue(flowFile);
+      testRunner.setProperty(CreateIndividual.INDIVIDUAL_ATTRIBUTE, "id");
+      testRunner.setProperty(CreateIndividual.NAME_ATTRIBUTE, "name");
 
-    // Run the enqueued content, it also takes an int = number of contents queued
-    testRunner.run();
+      // Add the flowfile to the runner
+      testRunner.enqueue(flowFile);
+
+      // Run the enqueued content, it also takes an int = number of contents queued
+      testRunner.run();
+    }
+
+    long now = new Date().getTime();
+    System.out.println(now - then);
   }
 
   @Test
