@@ -3,9 +3,8 @@ package com.weaverplatform.nifi.view;
 import com.google.common.io.Resources;
 import com.weaverplatform.nifi.util.WeaverProperties;
 import com.weaverplatform.sdk.Entity;
-import com.weaverplatform.sdk.EntityType;
-import com.weaverplatform.sdk.RelationKeys;
 import com.weaverplatform.sdk.Weaver;
+import com.weaverplatform.sdk.model.Dataset;
 import com.weaverplatform.sdk.websocket.WeaverSocket;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessSession;
@@ -20,8 +19,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 
@@ -64,13 +61,7 @@ public class CreateViewTest {
     weaver.wipe();
     
     // Create dataset
-    Map<String, Object> attributes = new HashMap<>();
-    attributes.put("name", "Dataset");
-    Entity dataset = weaver.add(attributes, EntityType.DATASET, WEAVER_DATASET);
-                              
-    // Give it the minimal collections it needs to be qualified as a valid view
-    dataset.linkEntity("views", weaver.collection());
-    dataset.linkEntity(RelationKeys.OBJECTS, weaver.collection());
+    Entity dataset = new Dataset(weaver, WEAVER_DATASET).create();
   }
   
 

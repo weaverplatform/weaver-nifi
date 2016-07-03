@@ -30,8 +30,6 @@ import java.util.concurrent.atomic.AtomicReference;
 @ReadsAttributes({@ReadsAttribute(attribute="", description="")})
 @WritesAttributes({@WritesAttribute(attribute="", description="")})
 public class CreateIndividual extends FlowFileProcessor {
-
-  Entity datasetObjects;
   
   public static final PropertyDescriptor NAME_ATTRIBUTE = new PropertyDescriptor
     .Builder().name("Name Attribute")
@@ -90,7 +88,7 @@ public class CreateIndividual extends FlowFileProcessor {
     String datasetId = NiFiProperties.getInstance().get(WeaverProperties.DATASET).toString();
 
     Entity dataset = weaver.get(datasetId);
-    datasetObjects = weaver.get(dataset.getRelations().get("objects").getId());
+    Entity datasetObjects = weaver.get(dataset.getRelations().get("objects").getId());
 
     String id = idFromOptions(context, flowFile, true);
     String name = getName(context);

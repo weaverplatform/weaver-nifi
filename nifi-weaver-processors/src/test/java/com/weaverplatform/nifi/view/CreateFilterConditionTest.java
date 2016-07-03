@@ -6,6 +6,7 @@ import com.weaverplatform.sdk.Entity;
 import com.weaverplatform.sdk.EntityType;
 import com.weaverplatform.sdk.RelationKeys;
 import com.weaverplatform.sdk.Weaver;
+import com.weaverplatform.sdk.model.Dataset;
 import com.weaverplatform.sdk.websocket.WeaverSocket;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessSession;
@@ -69,18 +70,13 @@ public class CreateFilterConditionTest {
     weaver.wipe();
     
     // Create dataset
-    Map<String, Object> attributes = new HashMap<>();
-    attributes.put("name", "Dataset");
-    dataset = weaver.add(attributes, EntityType.DATASET, WEAVER_DATASET);
-    
-    // Give it the minimal collections it needs to be qualified as a valid view
-    dataset.linkEntity("views", weaver.collection());
-    dataset.linkEntity(RelationKeys.OBJECTS, weaver.collection());
+    dataset = new Dataset(weaver, WEAVER_DATASET).create();
+
     
     // Create view
     Map<String, Object> viewAttributes = new HashMap<>();
-    attributes.put("name", "View");
-    view = weaver.add(attributes, EntityType.VIEW);
+    viewAttributes.put("name", "View");
+    view = weaver.add(viewAttributes, EntityType.VIEW);
 
     // Give it the minimal collections it needs to be qualified as a valid view
     view.linkEntity("filters", weaver.collection());
