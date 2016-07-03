@@ -1,6 +1,7 @@
 package com.weaverplatform.nifi.view;
 
-import com.weaverplatform.nifi.individual.DatasetProcessor;
+import com.weaverplatform.nifi.individual.FlowFileProcessor;
+import com.weaverplatform.nifi.util.WeaverProperties;
 import com.weaverplatform.sdk.Entity;
 import com.weaverplatform.sdk.EntityType;
 import com.weaverplatform.sdk.Weaver;
@@ -19,6 +20,7 @@ import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
+import org.apache.nifi.util.NiFiProperties;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,7 +32,9 @@ import java.util.concurrent.atomic.AtomicReference;
 @SeeAlso({})
 @ReadsAttributes({@ReadsAttribute(attribute="", description="")})
 @WritesAttributes({@WritesAttribute(attribute="", description="")})
-public class CreateView extends DatasetProcessor {
+public class CreateView extends FlowFileProcessor {
+
+  Entity datasetViews;
   
   public static final PropertyDescriptor NAME_ATTRIBUTE = new PropertyDescriptor
     .Builder().name("Name Attribute")
@@ -48,7 +52,7 @@ public class CreateView extends DatasetProcessor {
 
   @Override
   protected void init(final ProcessorInitializationContext context) {
-    super.init(context); 
+    super.init(context);
     
     descriptors.add(NAME_ATTRIBUTE);
     descriptors.add(NAME_STATIC);
@@ -62,6 +66,11 @@ public class CreateView extends DatasetProcessor {
     
     super.onTrigger(context, session);
     Weaver weaver = getWeaver();
+
+    String datasetId = NiFiProperties.getInstance().get(WeaverProperties.DATASET).toString();
+
+    Entity dataset = weaver.get(datasetId);
+    datasetViews = weaver.get(dataset.getRelations().get("models").getId());
 
     ProcessorLog log  = this.getLogger();
     FlowFile flowFile = this.getFlowFile();
@@ -78,7 +87,7 @@ public class CreateView extends DatasetProcessor {
     log.info("Create view with name " + name + " and id: " + id);
 
     // Attach to dataset
-    getDatasetViews().linkEntity(id, view);
+    datasetViews.linkEntity(id, view);
 
     // Give it the minimal collections it needs to be qualified as a valid view
     view.linkEntity("filters", weaver.collection());

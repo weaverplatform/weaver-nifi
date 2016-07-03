@@ -1,5 +1,6 @@
 package com.weaverplatform.nifi.individual;
 
+import com.weaverplatform.nifi.util.WeaverProperties;
 import com.weaverplatform.sdk.*;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
@@ -15,6 +16,7 @@ import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
+import org.apache.nifi.util.NiFiProperties;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -105,6 +107,7 @@ public class CreateIndividualProperty extends FlowFileProcessor {
     Weaver weaver = getWeaver();
 
     String id = idFromOptions(context, flowFile, true);
+    String source = getSource(context, flowFile);
     
     String subjectId = valueFromOptions(context, flowFile, SUBJECT_ATTRIBUTE, SUBJECT_STATIC, null);
     String predicate = valueFromOptions(context, flowFile, PREDICATE_ATTRIBUTE, PREDICATE_STATIC, null);
@@ -126,6 +129,7 @@ public class CreateIndividualProperty extends FlowFileProcessor {
 
       Map<String, Object> entityAttributes = new HashMap<>();
       entityAttributes.put("predicate", predicate);
+      entityAttributes.put("source", source);
 
       Map<String, ShallowEntity> relations = new HashMap<>();
       relations.put(RelationKeys.SUBJECT, subjectEntity);
@@ -144,33 +148,38 @@ public class CreateIndividualProperty extends FlowFileProcessor {
     
     } else {
 
+      String datasetId = NiFiProperties.getInstance().get(WeaverProperties.DATASET).toString();
+
+      Entity dataset = weaver.get(datasetId);
+      Entity datasetObjects = weaver.get(dataset.getRelations().get("objects").getId());
+
       // Get the parent object from weaver
       Entity subjectEntity = weaver.get(subjectId);
+//      ShallowEntity subjectEntity = new ShallowEntity(subjectId, EntityType.INDIVIDUAL);
       if(!EntityType.INDIVIDUAL.equals(subjectEntity.getType())) {
 
-
         Map<String, Object> attributes = new HashMap<>();
+        attributes.put("source", source);
         subjectEntity = createIndividual(subjectId, attributes);
-
+        datasetObjects.linkEntity(id, subjectEntity);
       }
 
       // Find the object
       Entity objectEntity = weaver.get(objectId);
       if (!EntityType.INDIVIDUAL.equals(objectEntity.getType())) {
 
-
         Map<String, Object> attributes = new HashMap<>();
+        attributes.put("source", source);
         objectEntity =  createIndividual(objectId, attributes);
-
       }
 
       Map<String, Object> entityAttributes = new HashMap<>();
       entityAttributes.put("predicate", predicate);
+      entityAttributes.put("source", source);
 
       Map<String, ShallowEntity> relations = new HashMap<>();
       relations.put(RelationKeys.SUBJECT, subjectEntity);
       relations.put(RelationKeys.OBJECT, objectEntity);
-
 
       Entity individualProperty = weaver.add(entityAttributes, EntityType.INDIVIDUAL_PROPERTY, id, relations);
 
@@ -180,10 +189,7 @@ public class CreateIndividualProperty extends FlowFileProcessor {
 
       // Link individual to collection
       entityProperties.linkEntity(individualProperty.getId(), individualProperty);
-      
     }
-
-
 
 //    weaver.close();
 

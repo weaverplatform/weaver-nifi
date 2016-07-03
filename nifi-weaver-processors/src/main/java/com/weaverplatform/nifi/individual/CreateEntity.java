@@ -69,14 +69,12 @@ public class CreateEntity extends FlowFileProcessor {
     
     super.init(context); 
     
-    
     descriptors.add(ENTITY_TYPE);
     descriptors.add(NAME_ATTRIBUTE);
     descriptors.add(NAME_STATIC);
     descriptors.add(NAME_PREFIX);
     descriptors.add(COLLECTION_LIST);
     this.properties = Collections.unmodifiableList(descriptors);
-
 
     this.relationships = new AtomicReference<>(relationshipSet);
   }

@@ -6,6 +6,7 @@ import com.weaverplatform.sdk.Entity;
 import com.weaverplatform.sdk.EntityType;
 import com.weaverplatform.sdk.RelationKeys;
 import com.weaverplatform.sdk.Weaver;
+import com.weaverplatform.sdk.model.Dataset;
 import com.weaverplatform.sdk.websocket.WeaverSocket;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessSession;
@@ -69,25 +70,20 @@ public class CreateFilterConditionTest {
     weaver.wipe();
     
     // Create dataset
-    Map<String, Object> attributes = new HashMap<>();
-    attributes.put("name", "Dataset");
-    dataset = weaver.add(attributes, EntityType.DATASET, WEAVER_DATASET);
-    
-    // Give it the minimal collections it needs to be qualified as a valid view
-    dataset.linkEntity("views", weaver.collection());
-    dataset.linkEntity(RelationKeys.OBJECTS, weaver.collection());
+    dataset = new Dataset(weaver, WEAVER_DATASET).create();
+
     
     // Create view
     Map<String, Object> viewAttributes = new HashMap<>();
-    attributes.put("name", "View");
-    view = weaver.add(attributes, EntityType.VIEW);
+    viewAttributes.put("name", "View");
+    view = weaver.add(viewAttributes, EntityType.VIEW);
 
     // Give it the minimal collections it needs to be qualified as a valid view
     view.linkEntity("filters", weaver.collection());
     view.linkEntity(RelationKeys.OBJECTS, weaver.collection());
 
     // Attach to dataset views
-    Entity views = weaver.get(dataset.getRelations().get("views").getId());
+    Entity views = weaver.get(dataset.getRelations().get("models").getId());
     views.linkEntity(view.getId(), view);
     
     // Create filter
@@ -164,8 +160,8 @@ public class CreateFilterConditionTest {
     
     // Load Condition
     Entity condition = weaver.get(conditionId);
-    assertEquals(condition.getAttributes().get("conditiontype"), "individual");
-    assertEquals(condition.getAttributes().get("operation"), "this-individual");
-    assertEquals(condition.getRelations().get("individual").getId(), individual.getId());
+    assertEquals("individual",       condition.getAttributes().get("conditiontype"));
+    assertEquals("this-individual",  condition.getAttributes().get("operation"));
+    assertEquals(individual.getId(), condition.getAttributes().get("individual"));
   }
 }
