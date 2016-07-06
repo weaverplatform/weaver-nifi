@@ -100,7 +100,7 @@ public class CreateIndividual extends FlowFileProcessor {
     // Create without checking for entities prior existence
     if(!isAddifying) {
 
-      Map<String, Object> attributes = new HashMap<>();
+      Map<String, String> attributes = new HashMap<>();
       attributes.put("name", name);
       attributes.put("source", source);
 
@@ -116,7 +116,7 @@ public class CreateIndividual extends FlowFileProcessor {
       // It doesn't exist yet
       if (!EntityType.INDIVIDUAL.equals(individual.getType())) {
 
-        Map<String, Object> attributes = new HashMap<>();
+        Map<String, String> attributes = new HashMap<>();
         attributes.put("name", name);
         attributes.put("source", source);
 
@@ -147,7 +147,7 @@ public class CreateIndividual extends FlowFileProcessor {
     session.transfer(flowFile, ORIGINAL);
   }
 
-  private void createIndividual(String id, Map<String, Object> attributes) {
+  private void createIndividual(String id, Map<String, String> attributes) {
     Weaver weaver = getWeaver();
 
     individual = weaver.add(attributes, EntityType.INDIVIDUAL, id);

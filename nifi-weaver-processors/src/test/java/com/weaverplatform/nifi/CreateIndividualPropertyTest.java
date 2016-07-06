@@ -83,7 +83,7 @@ public class CreateIndividualPropertyTest {
   @Test
   public void testProcessor() {
 
-    HashMap<String, Object> subjectAttributes = new HashMap<>();
+    HashMap<String, String> subjectAttributes = new HashMap<>();
     subjectAttributes.put("name", "subjectThing");
     Entity subjectEntity = weaver.add(subjectAttributes, EntityType.INDIVIDUAL, "816ee370-4274-e211-a3a8-b8ac6f902f00");
     subjectEntity.linkEntity(RelationKeys.PROPERTIES, weaver.collection());
@@ -91,7 +91,7 @@ public class CreateIndividualPropertyTest {
     // Attach to dataset
     datasetObjects.linkEntity(subjectEntity.getId(), subjectEntity);
 
-    HashMap<String, Object> objectAttributes = new HashMap<>();
+    HashMap<String, String> objectAttributes = new HashMap<>();
     objectAttributes.put("name", "objectThing");
     Entity objectEntity = weaver.add(objectAttributes, EntityType.INDIVIDUAL, "ib:Afsluitboom");
     objectEntity.linkEntity(RelationKeys.PROPERTIES, weaver.collection());

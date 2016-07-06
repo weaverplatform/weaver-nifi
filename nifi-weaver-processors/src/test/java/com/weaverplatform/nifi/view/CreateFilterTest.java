@@ -70,7 +70,7 @@ public class CreateFilterTest {
     dataset = new Dataset(weaver, WEAVER_DATASET).create();
     
     // Create view
-    Map<String, Object> viewAttributes = new HashMap<>();
+    Map<String, String> viewAttributes = new HashMap<>();
     viewAttributes.put("name", "View");
     view = weaver.add(viewAttributes, EntityType.VIEW);
 

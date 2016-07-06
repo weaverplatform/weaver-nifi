@@ -108,7 +108,7 @@ public class CreateValueProperty extends FlowFileProcessor {
     Map<String, ShallowEntity> relations = new HashMap<>();
     relations.put("subject", individual);
 
-    Map<String, Object> entityAttributes = new HashMap<>();
+    Map<String, String> entityAttributes = new HashMap<>();
     entityAttributes.put("predicate", predicate);
     entityAttributes.put("object", object);
     entityAttributes.put("source", source);

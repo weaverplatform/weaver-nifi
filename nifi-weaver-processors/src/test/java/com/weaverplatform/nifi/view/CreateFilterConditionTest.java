@@ -74,7 +74,7 @@ public class CreateFilterConditionTest {
 
     
     // Create view
-    Map<String, Object> viewAttributes = new HashMap<>();
+    Map<String, String> viewAttributes = new HashMap<>();
     viewAttributes.put("name", "View");
     view = weaver.add(viewAttributes, EntityType.VIEW);
 
@@ -87,7 +87,7 @@ public class CreateFilterConditionTest {
     views.linkEntity(view.getId(), view);
     
     // Create filter
-    Map<String, Object> filterAttributes = new HashMap<>();
+    Map<String, String> filterAttributes = new HashMap<>();
     filterAttributes.put("label", "Type");
     filterAttributes.put("celltype", "individual");
     filterAttributes.put("predicate", "rdf:type");
@@ -101,7 +101,7 @@ public class CreateFilterConditionTest {
     filters.linkEntity(filter.getId(), filter);
     
     // Create individual for condition
-    Map<String, Object> individualAttributes = new HashMap<>();
+    Map<String, String> individualAttributes = new HashMap<>();
     individualAttributes.put("name", "Tree");
     individual = weaver.add(individualAttributes, EntityType.INDIVIDUAL, "weav:Tree");
 

@@ -78,7 +78,7 @@ public class CreateView extends FlowFileProcessor {
     String id = idFromOptions(context, flowFile, true);
 
     // Prepare view attributes with name
-    Map<String, Object> attributes = new HashMap<>();
+    Map<String, String> attributes = new HashMap<>();
     String name = valueFromOptions(context, flowFile, NAME_ATTRIBUTE, NAME_STATIC, "Unnamed");
     attributes.put("name", name);
 

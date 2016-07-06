@@ -79,7 +79,7 @@ public class CreateValuePropertyTest {
   @Test
   public void testOnTrigger() {
 
-    HashMap<String, Object> subjectAttributes = new HashMap<>();
+    HashMap<String, String> subjectAttributes = new HashMap<>();
     subjectAttributes.put("name", "subjectThing");
     Entity subjectEntity = weaver.add(subjectAttributes, EntityType.INDIVIDUAL, "816ee370-4274-e211-a3a8-b8ac6f902f00");
     subjectEntity.linkEntity(RelationKeys.PROPERTIES, weaver.collection());

@@ -127,7 +127,7 @@ public class CreateIndividualProperty extends FlowFileProcessor {
       // Find the object
       Entity objectEntity = weaver.get(objectId);
 
-      Map<String, Object> entityAttributes = new HashMap<>();
+      Map<String, String> entityAttributes = new HashMap<>();
       entityAttributes.put("predicate", predicate);
       entityAttributes.put("source", source);
 
@@ -158,7 +158,7 @@ public class CreateIndividualProperty extends FlowFileProcessor {
 //      ShallowEntity subjectEntity = new ShallowEntity(subjectId, EntityType.INDIVIDUAL);
       if(!EntityType.INDIVIDUAL.equals(subjectEntity.getType())) {
 
-        Map<String, Object> attributes = new HashMap<>();
+        Map<String, String> attributes = new HashMap<>();
         attributes.put("source", source);
         subjectEntity = createIndividual(subjectId, attributes);
         datasetObjects.linkEntity(id, subjectEntity);
@@ -168,23 +168,23 @@ public class CreateIndividualProperty extends FlowFileProcessor {
       Entity objectEntity = weaver.get(objectId);
       if (!EntityType.INDIVIDUAL.equals(objectEntity.getType())) {
 
-        Map<String, Object> attributes = new HashMap<>();
+        Map<String, String> attributes = new HashMap<>();
         attributes.put("source", source);
         objectEntity =  createIndividual(objectId, attributes);
       }
 
-      Map<String, Object> entityAttributes = new HashMap<>();
+      Map<String, String> entityAttributes = new HashMap<>();
       entityAttributes.put("predicate", predicate);
       entityAttributes.put("source", source);
 
       Map<String, ShallowEntity> relations = new HashMap<>();
-      relations.put(RelationKeys.SUBJECT, subjectEntity);
-      relations.put(RelationKeys.OBJECT, objectEntity);
+      relations.put("subject", subjectEntity);
+      relations.put("object", objectEntity);
 
       Entity individualProperty = weaver.add(entityAttributes, EntityType.INDIVIDUAL_PROPERTY, id, relations);
 
       // Fetch parent collection
-      ShallowEntity shallowCollection = subjectEntity.getRelations().get(RelationKeys.PROPERTIES);
+      ShallowEntity shallowCollection = subjectEntity.getRelations().get("properties");
       Entity entityProperties = weaver.get(shallowCollection.getId());
 
       // Link individual to collection
@@ -213,7 +213,7 @@ public class CreateIndividualProperty extends FlowFileProcessor {
       .build();
   }
 
-  private Entity createIndividual(String id, Map<String, Object> attributes) {
+  private Entity createIndividual(String id, Map<String, String> attributes) {
     Weaver weaver = getWeaver();
 
     Entity individual = weaver.add(attributes, EntityType.INDIVIDUAL, id);

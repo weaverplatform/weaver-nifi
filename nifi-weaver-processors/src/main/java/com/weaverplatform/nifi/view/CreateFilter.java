@@ -97,7 +97,7 @@ public class CreateFilter extends FlowFileProcessor {
     Entity view = weaver.get(viewId);
 
     // Prepare filter attributes
-    Map<String, Object> attributes = new HashMap<>();
+    Map<String, String> attributes = new HashMap<>();
     attributes.put("label",     context.getProperty(LABEL_STATIC).getValue());
     attributes.put("celltype",  context.getProperty(CELLTYPE_STATIC).getValue());
     attributes.put("predicate", context.getProperty(PREDICATE_STATIC).getValue());

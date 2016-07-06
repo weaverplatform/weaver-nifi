@@ -89,7 +89,7 @@ public class CreateEntity extends FlowFileProcessor {
     String id = idFromOptions(context, flowFile, true);
 
     // Create entity by user attribute
-    Map<String, Object> attributes = new HashMap<>();
+    Map<String, String> attributes = new HashMap<>();
     String name = valueFromOptions(context, flowFile, NAME_ATTRIBUTE, NAME_STATIC, "Unnamed");
     if(context.getProperty(NAME_PREFIX).isSet()) {
       name = context.getProperty(NAME_PREFIX).getValue() + name;
