@@ -108,7 +108,7 @@ public class CreateEntity extends FlowFileProcessor {
       for(int i = 0; i<list.length; i++) {
         String collectionName = list[i].trim();
         Entity collection = weaver.collection();
-        individual.linkEntity(collectionName, collection);
+        individual.linkEntity(collectionName, collection.toShallowEntity());
       }
     }
 

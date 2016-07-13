@@ -75,7 +75,7 @@ public class CreateFilterTest {
     view = weaver.add(viewAttributes, EntityType.VIEW);
 
     // Give it the minimal collections it needs to be qualified as a valid view
-    view.linkEntity("filters", weaver.collection());
+    view.linkEntity("filters", weaver.collection().toShallowEntity());
   }
   
 

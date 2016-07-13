@@ -4,7 +4,6 @@ import com.google.common.io.Resources;
 import com.weaverplatform.nifi.util.WeaverProperties;
 import com.weaverplatform.sdk.Entity;
 import com.weaverplatform.sdk.EntityType;
-import com.weaverplatform.sdk.RelationKeys;
 import com.weaverplatform.sdk.Weaver;
 import com.weaverplatform.sdk.model.Dataset;
 import com.weaverplatform.sdk.websocket.WeaverSocket;
@@ -79,12 +78,12 @@ public class CreateFilterConditionTest {
     view = weaver.add(viewAttributes, EntityType.VIEW);
 
     // Give it the minimal collections it needs to be qualified as a valid view
-    view.linkEntity("filters", weaver.collection());
-    view.linkEntity(RelationKeys.OBJECTS, weaver.collection());
+    view.linkEntity("filters", weaver.collection().toShallowEntity());
+    view.linkEntity("objects", weaver.collection().toShallowEntity());
 
     // Attach to dataset views
     Entity views = weaver.get(dataset.getRelations().get("models").getId());
-    views.linkEntity(view.getId(), view);
+    views.linkEntity(view.getId(), view.toShallowEntity());
     
     // Create filter
     Map<String, String> filterAttributes = new HashMap<>();
@@ -94,11 +93,11 @@ public class CreateFilterConditionTest {
     filter = weaver.add(filterAttributes, "$FILTER");
 
     // Give it the minimal collections it needs to be qualified as a valid view
-    filter.linkEntity("conditions", weaver.collection());
+    filter.linkEntity("conditions", weaver.collection().toShallowEntity());
     
     // Attach to view
     Entity filters = weaver.get(view.getRelations().get("filters").getId());
-    filters.linkEntity(filter.getId(), filter);
+    filters.linkEntity(filter.getId(), filter.toShallowEntity());
     
     // Create individual for condition
     Map<String, String> individualAttributes = new HashMap<>();
@@ -106,12 +105,12 @@ public class CreateFilterConditionTest {
     individual = weaver.add(individualAttributes, EntityType.INDIVIDUAL, "weav:Tree");
 
     // Give it the minimal collections it needs to be qualified as a valid individual
-    individual.linkEntity(RelationKeys.PROPERTIES, weaver.collection());
-    individual.linkEntity(RelationKeys.ANNOTATIONS, weaver.collection());
+    individual.linkEntity("properties", weaver.collection().toShallowEntity());
+    individual.linkEntity("annotations", weaver.collection().toShallowEntity());
     
     // Attach to dataset objects
     Entity objects = weaver.get(dataset.getRelations().get("objects").getId());
-    objects.linkEntity(individual.getId(), individual);
+    objects.linkEntity(individual.getId(), individual.toShallowEntity());
   }
   
 

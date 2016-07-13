@@ -87,11 +87,11 @@ public class CreateView extends FlowFileProcessor {
     log.info("Create view with name " + name + " and id: " + id);
 
     // Attach to dataset
-    datasetViews.linkEntity(id, view);
+    datasetViews.linkEntity(id, view.toShallowEntity());
 
     // Give it the minimal collections it needs to be qualified as a valid view
-    view.linkEntity("filters", weaver.collection());
-    view.linkEntity("objects", weaver.collection());
+    view.linkEntity("filters", weaver.collection().toShallowEntity());
+    view.linkEntity("objects", weaver.collection().toShallowEntity());
     
     // Close connection
 //    weaver.close();

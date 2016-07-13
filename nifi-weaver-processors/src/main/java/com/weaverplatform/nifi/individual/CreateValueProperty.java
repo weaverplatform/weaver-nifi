@@ -106,7 +106,7 @@ public class CreateValueProperty extends FlowFileProcessor {
     Entity individual = weaver.get(subject);
 
     Map<String, ShallowEntity> relations = new HashMap<>();
-    relations.put("subject", individual);
+    relations.put("subject", individual.toShallowEntity());
 
     Map<String, String> entityAttributes = new HashMap<>();
     entityAttributes.put("predicate", predicate);
@@ -114,10 +114,10 @@ public class CreateValueProperty extends FlowFileProcessor {
     entityAttributes.put("source", source);
 
     Entity valueProperty = weaver.add(entityAttributes, EntityType.VALUE_PROPERTY, id, relations);
-    ShallowEntity properties = individual.getRelations().get(RelationKeys.PROPERTIES);
+    ShallowEntity properties = individual.getRelations().get("properties");
 
     Entity propertiesEntity = weaver.get(properties.getId());
-    propertiesEntity.linkEntity(valueProperty.getId(), valueProperty);
+    propertiesEntity.linkEntity(valueProperty.getId(), valueProperty.toShallowEntity());
 
 //    weaver.close();
 

@@ -5,7 +5,6 @@ import com.weaverplatform.nifi.individual.CreateIndividualProperty;
 import com.weaverplatform.nifi.util.WeaverProperties;
 import com.weaverplatform.sdk.Entity;
 import com.weaverplatform.sdk.EntityType;
-import com.weaverplatform.sdk.RelationKeys;
 import com.weaverplatform.sdk.Weaver;
 import com.weaverplatform.sdk.json.request.ReadPayload;
 import com.weaverplatform.sdk.model.Dataset;
@@ -86,18 +85,18 @@ public class CreateIndividualPropertyTest {
     HashMap<String, String> subjectAttributes = new HashMap<>();
     subjectAttributes.put("name", "subjectThing");
     Entity subjectEntity = weaver.add(subjectAttributes, EntityType.INDIVIDUAL, "816ee370-4274-e211-a3a8-b8ac6f902f00");
-    subjectEntity.linkEntity(RelationKeys.PROPERTIES, weaver.collection());
+    subjectEntity.linkEntity("properties", weaver.collection().toShallowEntity());
 
     // Attach to dataset
-    datasetObjects.linkEntity(subjectEntity.getId(), subjectEntity);
+    datasetObjects.linkEntity(subjectEntity.getId(), subjectEntity.toShallowEntity());
 
     HashMap<String, String> objectAttributes = new HashMap<>();
     objectAttributes.put("name", "objectThing");
     Entity objectEntity = weaver.add(objectAttributes, EntityType.INDIVIDUAL, "ib:Afsluitboom");
-    objectEntity.linkEntity(RelationKeys.PROPERTIES, weaver.collection());
+    objectEntity.linkEntity("properties", weaver.collection().toShallowEntity());
 
     // Attach to dataset
-    datasetObjects.linkEntity(objectEntity.getId(), objectEntity);
+    datasetObjects.linkEntity(objectEntity.getId(), objectEntity.toShallowEntity());
 
     try {
 

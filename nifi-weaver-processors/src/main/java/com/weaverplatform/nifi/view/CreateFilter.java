@@ -106,11 +106,11 @@ public class CreateFilter extends FlowFileProcessor {
     Entity filter = weaver.add(attributes, "$FILTER");
     
     // Give it the minimal collections it needs to be qualified as a valid filter
-    filter.linkEntity("conditions", weaver.collection());
+    filter.linkEntity("conditions", weaver.collection().toShallowEntity());
     
     // Attach to view
     Entity filters = weaver.get(view.getRelations().get("filters").getId());
-    filters.linkEntity(filter.getId(), filter);
+    filters.linkEntity(filter.getId(), filter.toShallowEntity());
     
     // Close connection
 //    weaver.close();

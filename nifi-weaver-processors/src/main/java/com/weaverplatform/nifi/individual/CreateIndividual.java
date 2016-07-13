@@ -107,7 +107,7 @@ public class CreateIndividual extends FlowFileProcessor {
       createIndividual(id, attributes);
 
       // Attach to dataset
-      datasetObjects.linkEntity(id, individual);
+      datasetObjects.linkEntity(id, individual.toShallowEntity());
 
     // Check to see whether it exists before creation
     } else {
@@ -123,7 +123,7 @@ public class CreateIndividual extends FlowFileProcessor {
         createIndividual(id, attributes);
 
         // Attach to dataset
-        datasetObjects.linkEntity(id, individual);
+        datasetObjects.linkEntity(id, individual.toShallowEntity());
 
       // It exists, see what to update
       } else {
@@ -152,7 +152,7 @@ public class CreateIndividual extends FlowFileProcessor {
 
     individual = weaver.add(attributes, EntityType.INDIVIDUAL, id);
     propertiesCollection = weaver.collection();
-    individual.linkEntity(RelationKeys.PROPERTIES, propertiesCollection);
+    individual.linkEntity("properties", propertiesCollection.toShallowEntity());
   }
 
   private String getName(ProcessContext context) {

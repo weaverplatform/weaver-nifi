@@ -126,7 +126,7 @@ public class CreateFilterCondition extends FlowFileProcessor {
     
     // Attach to filter conditions
     Entity conditions = weaver.get(filter.getRelations().get("conditions").getId());
-    conditions.linkEntity(condition.getId(), condition);
+    conditions.linkEntity(condition.getId(), condition.toShallowEntity());
     
     // Close connection
 //    weaver.close();
