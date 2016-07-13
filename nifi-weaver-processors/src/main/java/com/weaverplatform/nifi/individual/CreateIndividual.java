@@ -1,6 +1,5 @@
 package com.weaverplatform.nifi.individual;
 
-import com.weaverplatform.nifi.util.WeaverProperties;
 import com.weaverplatform.sdk.*;
 import com.weaverplatform.sdk.json.request.UpdateEntityAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
@@ -17,7 +16,6 @@ import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
-import org.apache.nifi.util.NiFiProperties;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -58,7 +56,7 @@ public class CreateIndividual extends FlowFileProcessor {
           "created if it does not already exist. (leave this field empty to disallow " +
           "this behaviour)")
       .required(false)
-      .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+      .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
       .build();
 
   private Entity individual;
@@ -85,17 +83,15 @@ public class CreateIndividual extends FlowFileProcessor {
     Weaver weaver = getWeaver();
 
 
-    String datasetId = NiFiProperties.getInstance().get(WeaverProperties.DATASET).toString();
 
-    Entity dataset = weaver.get(datasetId);
-    Entity datasetObjects = weaver.get(dataset.getRelations().get("objects").getId());
+    Entity datasetObjects = weaver.get(getDataset().getRelations().get("objects").getId());
 
     String id = idFromOptions(context, flowFile, true);
     String name = getName(context);
     String source = getSource(context, flowFile);
 
     // Should we be prepared for the possibility that this entity has already been created.
-    boolean isAddifying = context.getProperty(IS_ADDIFYING).isSet();
+    boolean isAddifying = !context.getProperty(IS_ADDIFYING).isSet() || context.getProperty(IS_ADDIFYING).asBoolean();
 
     // Create without checking for entities prior existence
     if(!isAddifying) {
@@ -111,10 +107,18 @@ public class CreateIndividual extends FlowFileProcessor {
 
     // Check to see whether it exists before creation
     } else {
-      individual = weaver.get(id);
 
-      // It doesn't exist yet
-      if (!EntityType.INDIVIDUAL.equals(individual.getType())) {
+      try {
+        individual = weaver.get(id);
+        if (!"".equals(name)) {
+
+          // Check if name attribute is set
+          if (!individual.getAttributes().containsKey("name") || !name.equals(individual.getAttributes().get("name"))) {
+            weaver.updateEntityAttribute(new UpdateEntityAttribute(new ShallowEntity(individual.getId(), individual.getType()), "name", new ShallowValue(name, "")));
+            weaver.updateEntityAttribute(new UpdateEntityAttribute(new ShallowEntity(individual.getId(), individual.getType()), "source", new ShallowValue(source, "")));
+          }
+        }
+      } catch(EntityNotFoundException e) {
 
         Map<String, String> attributes = new HashMap<>();
         attributes.put("name", name);
@@ -124,20 +128,6 @@ public class CreateIndividual extends FlowFileProcessor {
 
         // Attach to dataset
         datasetObjects.linkEntity(id, individual.toShallowEntity());
-
-      // It exists, see what to update
-      } else {
-
-        if (!"".equals(name)) {
-
-          // Check if name attribute is set
-          if (!individual.getAttributes().containsKey("name") || !name.equals(individual.getAttributes().get("name"))) {
-
-            weaver.updateEntityAttribute(new UpdateEntityAttribute(new ShallowEntity(individual.getId(), individual.getType()), "name", new ShallowValue(name, "")));
-            weaver.updateEntityAttribute(new UpdateEntityAttribute(new ShallowEntity(individual.getId(), individual.getType()), "source", new ShallowValue(source, "")));
-
-          }
-        }
       }
     }
     if(context.getProperty(ATTRIBUTE_NAME_FOR_ID).isSet()) {
