@@ -140,7 +140,7 @@ public class CreateIndividualTest {
 
     testRunner.setProperty(CreateIndividual.INDIVIDUAL_ATTRIBUTE, "id");
     testRunner.setProperty(CreateIndividual.SOURCE_ATTRIBUTE, "source");
-    testRunner.setProperty(CreateIndividual.IS_ADDIFYING, "yes");
+    testRunner.setProperty(CreateIndividual.IS_ADDIFYING, "true");
     testRunner.enqueue(flowFile1);
     testRunner.run();
 

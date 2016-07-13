@@ -7,7 +7,7 @@ services:
 before_install:
  - docker run -d -p 127.0.0.1:1111:1111 -e DBA_PASSWORD=myDbaPassword --name=virtuoso tenforce/virtuoso:1.0.0-virtuoso7.2.2 
  - docker run -d -p 127.0.0.1:6379:6379 --name=redis redis:3.2
- - docker run -d -p 127.0.0.1:9487:9487 --link=redis --link=virtuoso -e PORT=9487 -e WIPE_ENABLED=true -e REDIS_HOST=redis -e REDIS_PORT=6379 -e VIRTUOSO_HOST=virtuoso -e VIRTUOSO_PORT=1111 -e VIRTUOSO_CHECK_PORT=1111 -e VIRTUOSO_PASSWORD=myDbaPassword sysunite/weaver-server-virtuoso:0.1.13
+ - docker run -d -p 127.0.0.1:9487:9487 --link=redis --link=virtuoso -e PORT=9487 -e WIPE_ENABLED=true -e REDIS_HOST=redis -e REDIS_PORT=6379 -e VIRTUOSO_HOST=virtuoso -e VIRTUOSO_PORT=1111 -e VIRTUOSO_CHECK_PORT=1111 -e VIRTUOSO_PASSWORD=myDbaPassword sysunite/weaver-server-virtuoso:baslaptop.local
  - sleep 120  
 
 after_success:
