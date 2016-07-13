@@ -1,7 +1,10 @@
 package com.weaverplatform.nifi;
 
 import com.weaverplatform.nifi.util.WeaverProperties;
+import com.weaverplatform.sdk.Entity;
+import com.weaverplatform.sdk.EntityNotFoundException;
 import com.weaverplatform.sdk.Weaver;
+import com.weaverplatform.sdk.model.Dataset;
 import com.weaverplatform.sdk.websocket.WeaverSocket;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.processor.*;
@@ -63,6 +66,18 @@ public abstract class WeaverProcessor extends AbstractProcessor {
   
   public Weaver getWeaver() {
     return weaver;
+  }
+
+  public Entity getDataset() {
+    String datasetId = NiFiProperties.getInstance().get(WeaverProperties.DATASET).toString();
+    Entity dataset;
+    try {
+      dataset = weaver.get(datasetId);
+    } catch(EntityNotFoundException e) {
+      new Dataset(weaver, datasetId).create();
+      dataset = weaver.get(datasetId);
+    }
+    return dataset;
   }
 
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
