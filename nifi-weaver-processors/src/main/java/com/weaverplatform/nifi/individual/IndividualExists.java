@@ -1,7 +1,6 @@
 package com.weaverplatform.nifi.individual;
 
-import com.weaverplatform.sdk.Entity;
-import com.weaverplatform.sdk.EntityType;
+import com.weaverplatform.sdk.EntityNotFoundException;
 import com.weaverplatform.sdk.Weaver;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
@@ -61,14 +60,11 @@ public class IndividualExists extends EntityProcessor {
     }
     
     String id = idFromOptions(context, flowFile, false);
-    Entity entity = weaver.get(id);
-
-    if(EntityType.INDIVIDUAL.equals(entity.getType())) {
+    try {
+      weaver.get(id);
       session.transfer(flowFile, EXISTS);
-    } else {
+    } catch (EntityNotFoundException e) {
       session.transfer(flowFile, NOT_EXISTS);
     }
-
-//    weaver.close();
   }
 }
