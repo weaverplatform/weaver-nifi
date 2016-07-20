@@ -103,21 +103,25 @@ public class CreateValueProperty extends FlowFileProcessor {
     String predicate = valueFromOptions(context, flowFile, PREDICATE_ATTRIBUTE, PREDICATE_STATIC, null);
     String object = valueFromOptions(context, flowFile, OBJECT_ATTRIBUTE, OBJECT_STATIC, null);
 
+    if(subject == null || predicate == null || object == null) {
+      throw new RuntimeException("Either subject, predicate or object could not be interpreted!");
+    }
+
     Entity individual = weaver.get(subject);
 
     Map<String, ShallowEntity> relations = new HashMap<>();
-    relations.put("subject", individual);
+    relations.put("subject", individual.toShallowEntity());
 
-    Map<String, Object> entityAttributes = new HashMap<>();
+    Map<String, String> entityAttributes = new HashMap<>();
     entityAttributes.put("predicate", predicate);
     entityAttributes.put("object", object);
     entityAttributes.put("source", source);
 
     Entity valueProperty = weaver.add(entityAttributes, EntityType.VALUE_PROPERTY, id, relations);
-    ShallowEntity properties = individual.getRelations().get(RelationKeys.PROPERTIES);
+    ShallowEntity properties = individual.getRelations().get("properties");
 
     Entity propertiesEntity = weaver.get(properties.getId());
-    propertiesEntity.linkEntity(valueProperty.getId(), valueProperty);
+    propertiesEntity.linkEntity(valueProperty.getId(), valueProperty.toShallowEntity());
 
 //    weaver.close();
 

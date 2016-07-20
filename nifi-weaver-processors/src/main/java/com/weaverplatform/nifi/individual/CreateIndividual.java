@@ -1,6 +1,5 @@
 package com.weaverplatform.nifi.individual;
 
-import com.weaverplatform.nifi.util.WeaverProperties;
 import com.weaverplatform.sdk.*;
 import com.weaverplatform.sdk.json.request.UpdateEntityAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
@@ -17,7 +16,6 @@ import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
-import org.apache.nifi.util.NiFiProperties;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -58,7 +56,7 @@ public class CreateIndividual extends FlowFileProcessor {
           "created if it does not already exist. (leave this field empty to disallow " +
           "this behaviour)")
       .required(false)
-      .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+      .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
       .build();
 
   private Entity individual;
@@ -85,70 +83,66 @@ public class CreateIndividual extends FlowFileProcessor {
     Weaver weaver = getWeaver();
 
 
-    String datasetId = NiFiProperties.getInstance().get(WeaverProperties.DATASET).toString();
 
-    Entity dataset = weaver.get(datasetId);
-    Entity datasetObjects = weaver.get(dataset.getRelations().get("objects").getId());
+    Entity datasetObjects = weaver.get(getDataset().getRelations().get("objects").getId());
 
     String id = idFromOptions(context, flowFile, true);
     String name = getName(context);
     String source = getSource(context, flowFile);
 
     // Should we be prepared for the possibility that this entity has already been created.
-    boolean isAddifying = context.getProperty(IS_ADDIFYING).isSet();
+    boolean isAddifying = !context.getProperty(IS_ADDIFYING).isSet() || context.getProperty(IS_ADDIFYING).asBoolean();
 
     // Create without checking for entities prior existence
     if(!isAddifying) {
 
-      Map<String, Object> attributes = new HashMap<>();
+      Map<String, String> attributes = new HashMap<>();
       attributes.put("name", name);
       attributes.put("source", source);
 
       createIndividual(id, attributes);
 
       // Attach to dataset
-      datasetObjects.linkEntity(id, individual);
+      datasetObjects.linkEntity(id, individual.toShallowEntity());
 
     // Check to see whether it exists before creation
     } else {
-      individual = weaver.get(id);
 
-      // It doesn't exist yet
-      if (!EntityType.INDIVIDUAL.equals(individual.getType())) {
+      try {
+        individual = weaver.get(id);
+        if (!"".equals(name)) {
 
-        Map<String, Object> attributes = new HashMap<>();
+          // Check if name attribute is set
+          if (!individual.getAttributes().containsKey("name") || !name.equals(individual.getAttributes().get("name"))) {
+            weaver.updateEntityAttribute(new UpdateEntityAttribute(new ShallowEntity(individual.getId(), individual.getType()), "name", new ShallowValue(name, "")));
+            weaver.updateEntityAttribute(new UpdateEntityAttribute(new ShallowEntity(individual.getId(), individual.getType()), "source", new ShallowValue(source, "")));
+          }
+        }
+      } catch(EntityNotFoundException e) {
+
+        Map<String, String> attributes = new HashMap<>();
         attributes.put("name", name);
         attributes.put("source", source);
 
         createIndividual(id, attributes);
 
         // Attach to dataset
-        datasetObjects.linkEntity(id, individual);
-
-      // It exists, see what to update
-      } else {
-
-        if (!"".equals(name)) {
-
-          // Check if name attribute is set
-          if (!individual.getAttributes().containsKey("name") || !name.equals(individual.getAttributes().get("name"))) {
-
-            weaver.updateEntityAttribute(new UpdateEntityAttribute(new ShallowEntity(individual.getId(), individual.getType()), "name", new ShallowValue(name, "")));
-            weaver.updateEntityAttribute(new UpdateEntityAttribute(new ShallowEntity(individual.getId(), individual.getType()), "source", new ShallowValue(source, "")));
-
-          }
-        }
+        datasetObjects.linkEntity(id, individual.toShallowEntity());
       }
+    }
+    if(context.getProperty(ATTRIBUTE_NAME_FOR_ID).isSet()) {
+      String attributeNameForId = context.getProperty(ATTRIBUTE_NAME_FOR_ID).getValue();
+      flowFile = session.putAttribute(flowFile, attributeNameForId, id);
     }
     session.transfer(flowFile, ORIGINAL);
   }
 
-  private void createIndividual(String id, Map<String, Object> attributes) {
+  private void createIndividual(String id, Map<String, String> attributes) {
     Weaver weaver = getWeaver();
 
     individual = weaver.add(attributes, EntityType.INDIVIDUAL, id);
     propertiesCollection = weaver.collection();
-    individual.linkEntity(RelationKeys.PROPERTIES, propertiesCollection);
+    individual.linkEntity("properties", propertiesCollection.toShallowEntity());
   }
 
   private String getName(ProcessContext context) {

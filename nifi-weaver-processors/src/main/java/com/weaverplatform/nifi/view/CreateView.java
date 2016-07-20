@@ -1,7 +1,6 @@
 package com.weaverplatform.nifi.view;
 
 import com.weaverplatform.nifi.individual.FlowFileProcessor;
-import com.weaverplatform.nifi.util.WeaverProperties;
 import com.weaverplatform.sdk.Entity;
 import com.weaverplatform.sdk.EntityType;
 import com.weaverplatform.sdk.Weaver;
@@ -20,7 +19,6 @@ import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
-import org.apache.nifi.util.NiFiProperties;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -67,10 +65,8 @@ public class CreateView extends FlowFileProcessor {
     super.onTrigger(context, session);
     Weaver weaver = getWeaver();
 
-    String datasetId = NiFiProperties.getInstance().get(WeaverProperties.DATASET).toString();
 
-    Entity dataset = weaver.get(datasetId);
-    datasetViews = weaver.get(dataset.getRelations().get("models").getId());
+    datasetViews = weaver.get(getDataset().getRelations().get("models").getId());
 
     ProcessorLog log  = this.getLogger();
     FlowFile flowFile = this.getFlowFile();
@@ -78,7 +74,7 @@ public class CreateView extends FlowFileProcessor {
     String id = idFromOptions(context, flowFile, true);
 
     // Prepare view attributes with name
-    Map<String, Object> attributes = new HashMap<>();
+    Map<String, String> attributes = new HashMap<>();
     String name = valueFromOptions(context, flowFile, NAME_ATTRIBUTE, NAME_STATIC, "Unnamed");
     attributes.put("name", name);
 
@@ -87,11 +83,11 @@ public class CreateView extends FlowFileProcessor {
     log.info("Create view with name " + name + " and id: " + id);
 
     // Attach to dataset
-    datasetViews.linkEntity(id, view);
+    datasetViews.linkEntity(id, view.toShallowEntity());
 
     // Give it the minimal collections it needs to be qualified as a valid view
-    view.linkEntity("filters", weaver.collection());
-    view.linkEntity("objects", weaver.collection());
+    view.linkEntity("filters", weaver.collection().toShallowEntity());
+    view.linkEntity("objects", weaver.collection().toShallowEntity());
     
     // Close connection
 //    weaver.close();

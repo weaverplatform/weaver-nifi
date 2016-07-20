@@ -1,7 +1,10 @@
 package com.weaverplatform.nifi;
 
 import com.weaverplatform.nifi.util.WeaverProperties;
+import com.weaverplatform.sdk.Entity;
+import com.weaverplatform.sdk.EntityNotFoundException;
 import com.weaverplatform.sdk.Weaver;
+import com.weaverplatform.sdk.model.Dataset;
 import com.weaverplatform.sdk.websocket.WeaverSocket;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.processor.*;
@@ -28,8 +31,8 @@ public abstract class WeaverProcessor extends AbstractProcessor {
   public final Set<Relationship> relationshipSet = new HashSet<>();
   public AtomicReference<Set<Relationship>> relationships;
 
-  public String weaverUrl;
-  private Weaver weaver;
+  private static String weaverUrl = null;
+  private static Weaver weaver = null;
 
   public static final PropertyDescriptor WEAVER = new PropertyDescriptor
       .Builder().name("Weaver URL")
@@ -41,28 +44,35 @@ public abstract class WeaverProcessor extends AbstractProcessor {
   
   @Override
   protected void init(final ProcessorInitializationContext context) {
-    
-    getLogger().error("init started");
-
     descriptors.add(WEAVER);
-
-    // Weaver URL
-//    if(context.getProperty(WEAVER).isSet()) {
-//      weaverUrl = context.getProperty(WEAVER).getValue();
-//    } else {
-      weaverUrl = NiFiProperties.getInstance().get(WeaverProperties.URL).toString();
-//    }
-
-    weaver = new Weaver();
-    try {
-      weaver.connect(new WeaverSocket(new URI(weaverUrl)));
-    } catch (URISyntaxException e) {
-      throw new ProcessException(e);
-    }
   }
   
   public Weaver getWeaver() {
+    if(weaverUrl == null) {
+      weaverUrl = NiFiProperties.getInstance().get(WeaverProperties.URL).toString();
+    }
+    if(weaver == null) {
+      weaver = new Weaver();
+      try {
+        weaver.connect(new WeaverSocket(new URI(weaverUrl)));
+      } catch (URISyntaxException e) {
+        throw new ProcessException(e);
+      }
+    }
     return weaver;
+  }
+
+  public Entity getDataset() {
+    Weaver weaver = getWeaver();
+    String datasetId = NiFiProperties.getInstance().get(WeaverProperties.DATASET).toString();
+    Entity dataset;
+    try {
+      dataset = weaver.get(datasetId);
+    } catch(EntityNotFoundException e) {
+      new Dataset(weaver, datasetId).get(datasetId);
+      dataset = weaver.get(datasetId);
+    }
+    return dataset;
   }
 
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {

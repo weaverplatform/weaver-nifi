@@ -1,6 +1,5 @@
 package com.weaverplatform.nifi.individual;
 
-import com.weaverplatform.nifi.util.WeaverProperties;
 import com.weaverplatform.sdk.*;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
@@ -16,7 +15,6 @@ import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
-import org.apache.nifi.util.NiFiProperties;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -78,7 +76,7 @@ public class CreateIndividualProperty extends FlowFileProcessor {
           "created if it does not already exist. (leave this field empty to disallow " +
           "this behaviour)")
       .required(false)
-      .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+      .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
       .build();
 
   @Override
@@ -116,7 +114,7 @@ public class CreateIndividualProperty extends FlowFileProcessor {
     log.info("Creating Individual Property with SUBJECT: " + subjectId + ", OBJECT: " + objectId +  ", and PREDICATE: " + predicate + ".");
 
     // Should we be prepared for the possibility that this entity has already been created.
-    boolean isAddifying = context.getProperty(IS_ADDIFYING).isSet();
+    boolean isAddifying = !context.getProperty(IS_ADDIFYING).isSet() || context.getProperty(IS_ADDIFYING).asBoolean();
 
     // Create without checking for entities prior existence
     if(!isAddifying) {
@@ -127,68 +125,67 @@ public class CreateIndividualProperty extends FlowFileProcessor {
       // Find the object
       Entity objectEntity = weaver.get(objectId);
 
-      Map<String, Object> entityAttributes = new HashMap<>();
+      Map<String, String> entityAttributes = new HashMap<>();
       entityAttributes.put("predicate", predicate);
       entityAttributes.put("source", source);
 
       Map<String, ShallowEntity> relations = new HashMap<>();
-      relations.put(RelationKeys.SUBJECT, subjectEntity);
-      relations.put(RelationKeys.OBJECT, objectEntity);
+      relations.put("subject", subjectEntity.toShallowEntity());
+      relations.put("object", objectEntity.toShallowEntity());
 
       Entity individualProperty = weaver.add(entityAttributes, EntityType.INDIVIDUAL_PROPERTY, id, relations);
 
       // Fetch parent collection
-      ShallowEntity shallowCollection = subjectEntity.getRelations().get(RelationKeys.PROPERTIES);
+      ShallowEntity shallowCollection = subjectEntity.getRelations().get("properties");
       Entity entityProperties = weaver.get(shallowCollection.getId());
 
       // Link individual to collection
-      entityProperties.linkEntity(individualProperty.getId(), individualProperty);
+      entityProperties.linkEntity(individualProperty.getId(), individualProperty.toShallowEntity());
 
 
     
     } else {
 
-      String datasetId = NiFiProperties.getInstance().get(WeaverProperties.DATASET).toString();
-
-      Entity dataset = weaver.get(datasetId);
-      Entity datasetObjects = weaver.get(dataset.getRelations().get("objects").getId());
+      Entity datasetObjects = weaver.get(getDataset().getRelations().get("objects").getId());
 
       // Get the parent object from weaver
-      Entity subjectEntity = weaver.get(subjectId);
-//      ShallowEntity subjectEntity = new ShallowEntity(subjectId, EntityType.INDIVIDUAL);
-      if(!EntityType.INDIVIDUAL.equals(subjectEntity.getType())) {
-
-        Map<String, Object> attributes = new HashMap<>();
+      Entity subjectEntity;
+      try {
+        subjectEntity = weaver.get(subjectId);
+      } catch (EntityNotFoundException e) {
+        Map<String, String> attributes = new HashMap<>();
         attributes.put("source", source);
         subjectEntity = createIndividual(subjectId, attributes);
-        datasetObjects.linkEntity(id, subjectEntity);
+        datasetObjects.linkEntity(id, subjectEntity.toShallowEntity());
       }
 
       // Find the object
-      Entity objectEntity = weaver.get(objectId);
-      if (!EntityType.INDIVIDUAL.equals(objectEntity.getType())) {
-
-        Map<String, Object> attributes = new HashMap<>();
+      Entity objectEntity;
+      try {
+        objectEntity = weaver.get(objectId);
+      } catch (EntityNotFoundException e) {
+        Map<String, String> attributes = new HashMap<>();
         attributes.put("source", source);
-        objectEntity =  createIndividual(objectId, attributes);
+        objectEntity = createIndividual(objectId, attributes);
+        datasetObjects.linkEntity(id, objectEntity.toShallowEntity());
       }
 
-      Map<String, Object> entityAttributes = new HashMap<>();
+      Map<String, String> entityAttributes = new HashMap<>();
       entityAttributes.put("predicate", predicate);
       entityAttributes.put("source", source);
 
       Map<String, ShallowEntity> relations = new HashMap<>();
-      relations.put(RelationKeys.SUBJECT, subjectEntity);
-      relations.put(RelationKeys.OBJECT, objectEntity);
+      relations.put("subject", subjectEntity.toShallowEntity());
+      relations.put("object", objectEntity.toShallowEntity());
 
       Entity individualProperty = weaver.add(entityAttributes, EntityType.INDIVIDUAL_PROPERTY, id, relations);
 
       // Fetch parent collection
-      ShallowEntity shallowCollection = subjectEntity.getRelations().get(RelationKeys.PROPERTIES);
+      ShallowEntity shallowCollection = subjectEntity.getRelations().get("properties");
       Entity entityProperties = weaver.get(shallowCollection.getId());
 
       // Link individual to collection
-      entityProperties.linkEntity(individualProperty.getId(), individualProperty);
+      entityProperties.linkEntity(individualProperty.getId(), individualProperty.toShallowEntity());
     }
 
 //    weaver.close();
@@ -213,16 +210,16 @@ public class CreateIndividualProperty extends FlowFileProcessor {
       .build();
   }
 
-  private Entity createIndividual(String id, Map<String, Object> attributes) {
+  private Entity createIndividual(String id, Map<String, String> attributes) {
     Weaver weaver = getWeaver();
 
     Entity individual = weaver.add(attributes, EntityType.INDIVIDUAL, id);
 
     Entity entityProperties = weaver.collection();
-    individual.linkEntity(RelationKeys.PROPERTIES, entityProperties);
+    individual.linkEntity("properties", entityProperties.toShallowEntity());
 
     Entity entityAnnotations = weaver.collection();
-    individual.linkEntity(RelationKeys.ANNOTATIONS, entityAnnotations);
+    individual.linkEntity("annotations", entityAnnotations.toShallowEntity());
 
     return individual;
   }

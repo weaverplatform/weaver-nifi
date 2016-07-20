@@ -97,7 +97,7 @@ public class CreateFilterCondition extends FlowFileProcessor {
     String conditionType = context.getProperty(CONDITION_TYPE_STATIC).getValue();
 
     // Prepare condition attributes
-    Map<String, Object> attributes = new HashMap<>();
+    Map<String, String> attributes = new HashMap<>();
     attributes.put("conditiontype", conditionType);
     attributes.put("operation",     context.getProperty(OPERATION_STATIC).getValue());
 
@@ -126,7 +126,7 @@ public class CreateFilterCondition extends FlowFileProcessor {
     
     // Attach to filter conditions
     Entity conditions = weaver.get(filter.getRelations().get("conditions").getId());
-    conditions.linkEntity(condition.getId(), condition);
+    conditions.linkEntity(condition.getId(), condition.toShallowEntity());
     
     // Close connection
 //    weaver.close();

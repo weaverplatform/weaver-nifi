@@ -1,7 +1,6 @@
 package com.weaverplatform.nifi.individual;
 
-import com.weaverplatform.sdk.Entity;
-import com.weaverplatform.sdk.EntityType;
+import com.weaverplatform.sdk.EntityNotFoundException;
 import com.weaverplatform.sdk.Weaver;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
@@ -9,6 +8,8 @@ import org.apache.nifi.annotation.behavior.WritesAttribute;
 import org.apache.nifi.annotation.behavior.WritesAttributes;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
+import org.apache.nifi.components.PropertyDescriptor;
+import org.apache.nifi.components.PropertyValue;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.logging.ProcessorLog;
 import org.apache.nifi.processor.ProcessContext;
@@ -16,11 +17,12 @@ import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
 import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.processor.exception.ProcessException;
+import org.apache.nifi.processor.util.StandardValidators;
 
-import java.util.Collections;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
-@Tags({"weaver, individual, exists"})
+@Tags({"weaver, individual, exists, deprecated"})
 @SeeAlso({})
 @ReadsAttributes({@ReadsAttribute(attribute="", description="")})
 @WritesAttributes({@WritesAttribute(attribute="", description="")})
@@ -36,6 +38,9 @@ public class IndividualExists extends EntityProcessor {
     .description("Original FlowFile if individual does not exist.")
     .build();
 
+  private volatile Set<String> dynamicPropertyNames;
+  private Map<String, PropertyValue> propertyMap;
+
   @Override
   protected void init(final ProcessorInitializationContext context) {
     
@@ -46,6 +51,21 @@ public class IndividualExists extends EntityProcessor {
     relationshipSet.add(EXISTS);
     relationshipSet.add(NOT_EXISTS);
     this.relationships = new AtomicReference<>(relationshipSet);
+
+    // For dynamic properties
+    this.dynamicPropertyNames = new HashSet<>();
+    this.propertyMap = new HashMap<>();
+  }
+
+  @Override
+  protected PropertyDescriptor getSupportedDynamicPropertyDescriptor(final String propertyDescriptorName) {
+    return new PropertyDescriptor.Builder()
+        .required(false)
+        .name(propertyDescriptorName)
+        .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+        .dynamic(true)
+        .expressionLanguageSupported(false)
+        .build();
   }
 
   @Override
@@ -61,14 +81,11 @@ public class IndividualExists extends EntityProcessor {
     }
     
     String id = idFromOptions(context, flowFile, false);
-    Entity entity = weaver.get(id);
-
-    if(EntityType.INDIVIDUAL.equals(entity.getType())) {
+    try {
+      weaver.get(id);
       session.transfer(flowFile, EXISTS);
-    } else {
+    } catch (EntityNotFoundException e) {
       session.transfer(flowFile, NOT_EXISTS);
     }
-
-//    weaver.close();
   }
 }

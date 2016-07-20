@@ -4,7 +4,6 @@ import com.google.common.io.Resources;
 import com.weaverplatform.nifi.util.WeaverProperties;
 import com.weaverplatform.sdk.Entity;
 import com.weaverplatform.sdk.Weaver;
-import com.weaverplatform.sdk.model.Dataset;
 import com.weaverplatform.sdk.websocket.WeaverSocket;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessSession;
@@ -59,9 +58,6 @@ public class CreateViewTest {
     weaver = new Weaver();
     weaver.connect(new WeaverSocket(new URI(WEAVER_URL)));
     weaver.wipe();
-    
-    // Create dataset
-    Entity dataset = new Dataset(weaver, WEAVER_DATASET).create();
   }
   
 

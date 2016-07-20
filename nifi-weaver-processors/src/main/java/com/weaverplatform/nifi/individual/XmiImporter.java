@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicReference;
 @WritesAttributes({@WritesAttribute(attribute="", description="")})
 public class XmiImporter extends FlowFileProcessor {
 
-  String datasetId;
 
   @Override
   protected void init(final ProcessorInitializationContext context) {
@@ -46,7 +45,7 @@ public class XmiImporter extends FlowFileProcessor {
 
     super.onTrigger(context, session);
 
-    datasetId = NiFiProperties.getInstance().get(WeaverProperties.DATASET).toString();
+    String datasetId = NiFiProperties.getInstance().get(WeaverProperties.DATASET).toString();
 
     session.read(flowFile, new InputStreamCallback() {
 
@@ -59,8 +58,6 @@ public class XmiImporter extends FlowFileProcessor {
 
       }
     });
-
-//    getWeaver().close();
 
     session.transfer(flowFile, ORIGINAL);
   }

@@ -67,15 +67,15 @@ public class CreateFilterTest {
     weaver.wipe();
     
     // Create dataset
-    dataset = new Dataset(weaver, WEAVER_DATASET).create();
+    dataset = new Dataset(weaver, WEAVER_DATASET).get(WEAVER_DATASET);
     
     // Create view
-    Map<String, Object> viewAttributes = new HashMap<>();
+    Map<String, String> viewAttributes = new HashMap<>();
     viewAttributes.put("name", "View");
     view = weaver.add(viewAttributes, EntityType.VIEW);
 
     // Give it the minimal collections it needs to be qualified as a valid view
-    view.linkEntity("filters", weaver.collection());
+    view.linkEntity("filters", weaver.collection().toShallowEntity());
   }
   
 

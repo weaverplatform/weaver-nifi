@@ -5,7 +5,6 @@ import com.weaverplatform.nifi.individual.CreateValueProperty;
 import com.weaverplatform.nifi.util.WeaverProperties;
 import com.weaverplatform.sdk.Entity;
 import com.weaverplatform.sdk.EntityType;
-import com.weaverplatform.sdk.RelationKeys;
 import com.weaverplatform.sdk.Weaver;
 import com.weaverplatform.sdk.model.Dataset;
 import com.weaverplatform.sdk.websocket.WeaverSocket;
@@ -67,7 +66,7 @@ public class CreateValuePropertyTest {
     weaver.wipe();
 
     // Create dataset
-    dataset = new Dataset(weaver, WEAVER_DATASET).create();
+    dataset = new Dataset(weaver, WEAVER_DATASET).get(WEAVER_DATASET);
     datasetObjects = weaver.get(dataset.getRelations().get("objects").getId());
 
     System.out.println(new File(getClass().getClassLoader().getResource("nifi.properties").getFile()).toString());
@@ -79,13 +78,13 @@ public class CreateValuePropertyTest {
   @Test
   public void testOnTrigger() {
 
-    HashMap<String, Object> subjectAttributes = new HashMap<>();
+    HashMap<String, String> subjectAttributes = new HashMap<>();
     subjectAttributes.put("name", "subjectThing");
     Entity subjectEntity = weaver.add(subjectAttributes, EntityType.INDIVIDUAL, "816ee370-4274-e211-a3a8-b8ac6f902f00");
-    subjectEntity.linkEntity(RelationKeys.PROPERTIES, weaver.collection());
+    subjectEntity.linkEntity("properties", weaver.collection().toShallowEntity());
 
     // Attach to dataset
-    datasetObjects.linkEntity(subjectEntity.getId(), subjectEntity);
+    datasetObjects.linkEntity(subjectEntity.getId(), subjectEntity.toShallowEntity());
     
     try {
 
@@ -103,7 +102,7 @@ public class CreateValuePropertyTest {
 
       //from nifi-envi the user specifies this dynamic attribute, which to look for on the flowfile later
       // Add properties (required)
-      testRunner.setProperty(CreateValueProperty.WEAVER, "http://localhost:9487");
+      testRunner.setProperty(CreateValueProperty.WEAVER, WEAVER_URL);
       testRunner.setProperty(CreateValueProperty.SUBJECT_ATTRIBUTE, "id");
       testRunner.setProperty(CreateValueProperty.PREDICATE_STATIC, "rdf:label");
       testRunner.setProperty(CreateValueProperty.OBJECT_ATTRIBUTE, "name");

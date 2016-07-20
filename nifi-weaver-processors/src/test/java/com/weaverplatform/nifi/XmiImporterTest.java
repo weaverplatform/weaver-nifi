@@ -1,13 +1,25 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.weaverplatform.nifi;
 
 import com.google.common.io.Resources;
-import com.weaverplatform.nifi.individual.CreateIndividualProperty;
+import com.weaverplatform.nifi.individual.XmiImporter;
 import com.weaverplatform.nifi.util.WeaverProperties;
-import com.weaverplatform.sdk.Entity;
-import com.weaverplatform.sdk.EntityType;
 import com.weaverplatform.sdk.Weaver;
-import com.weaverplatform.sdk.json.request.ReadPayload;
-import com.weaverplatform.sdk.model.Dataset;
 import com.weaverplatform.sdk.websocket.WeaverSocket;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -26,13 +38,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.HashMap;
 import java.util.Properties;
 
-import static org.junit.Assert.assertEquals;
 
-
-public class CreateIndividualPropertyTest {
+public class XmiImporterTest {
 
   private TestRunner testRunner;
 
@@ -40,8 +49,6 @@ public class CreateIndividualPropertyTest {
   private static String WEAVER_URL;
   private static String WEAVER_DATASET;
 
-  Entity dataset;
-  Entity datasetObjects;
 
   @BeforeClass
   public static void beforeClass() throws IOException {
@@ -69,64 +76,36 @@ public class CreateIndividualPropertyTest {
     weaver.connect(new WeaverSocket(new URI(WEAVER_URL)));
     weaver.wipe();
 
-    // Create dataset
-    dataset = new Dataset(weaver, WEAVER_DATASET).get(WEAVER_DATASET);
-    datasetObjects = weaver.get(dataset.getRelations().get("objects").getId());
-
     System.out.println(new File(getClass().getClassLoader().getResource("nifi.properties").getFile()).toString());
     Properties props = System.getProperties();
     props.setProperty("nifi.properties.file.path", new File(getClass().getClassLoader().getResource("nifi.properties").getFile()).toString());
-    testRunner = TestRunners.newTestRunner(CreateIndividualProperty.class);
+    testRunner = TestRunners.newTestRunner(XmiImporter.class);
   }
 
+
+
   @Test
-  public void testProcessor() {
-
-    HashMap<String, String> subjectAttributes = new HashMap<>();
-    subjectAttributes.put("name", "subjectThing");
-    Entity subjectEntity = weaver.add(subjectAttributes, EntityType.INDIVIDUAL, "816ee370-4274-e211-a3a8-b8ac6f902f00");
-    subjectEntity.linkEntity("properties", weaver.collection().toShallowEntity());
-
-    // Attach to dataset
-    datasetObjects.linkEntity(subjectEntity.getId(), subjectEntity.toShallowEntity());
-
-    HashMap<String, String> objectAttributes = new HashMap<>();
-    objectAttributes.put("name", "objectThing");
-    Entity objectEntity = weaver.add(objectAttributes, EntityType.INDIVIDUAL, "ib:Afsluitboom");
-    objectEntity.linkEntity("properties", weaver.collection().toShallowEntity());
-
-    // Attach to dataset
-    datasetObjects.linkEntity(objectEntity.getId(), objectEntity.toShallowEntity());
+  public void testOnTrigger() {
 
     try {
 
       // Random info and simulate flowfile (with attributes) passed through to this processor in early state
-      String file = "line.txt";
+      String file = "xmi.xml";
       byte[] contents = FileUtils.readFileToByteArray(new File(getClass().getClassLoader().getResource(file).getFile()));
       InputStream in = new ByteArrayInputStream(contents);
       InputStream cont = new ByteArrayInputStream(IOUtils.toByteArray(in));
       ProcessSession session = testRunner.getProcessSessionFactory().createSession();
-      FlowFile flowFile = session.create();
-      flowFile = session.importFrom(cont, flowFile);
-      flowFile = session.putAttribute(flowFile, "id", "816ee370-4274-e211-a3a8-b8ac6f902f00");
-      flowFile = session.putAttribute(flowFile, "name", "(AB CT1-N-06) Snelle doorsteek A10");
+      FlowFile f = session.create();
+      f = session.importFrom(cont, f);
 
-      testRunner.setProperty(CreateIndividualProperty.INDIVIDUAL_STATIC, "xyz");
-      testRunner.setProperty(CreateIndividualProperty.SUBJECT_ATTRIBUTE, "id");
-      testRunner.setProperty(CreateIndividualProperty.PREDICATE_STATIC, "rdf:type");
-      testRunner.setProperty(CreateIndividualProperty.OBJECT_STATIC, "ib:Afsluitboom");
+      // Add the flowfile to the runner
+      testRunner.enqueue(f);
 
-      testRunner.enqueue(flowFile);
+      // Run the enqueued content, it also takes an int = number of contents queued
       testRunner.run();
 
-    } catch (IOException e) {
-      System.out.println("IO went wrong");
+    } catch (Exception e) {
       e.printStackTrace();
     }
-
-
-    Entity reloaded = weaver.get("xyz", new ReadPayload.Opts(-1));
-    assertEquals("816ee370-4274-e211-a3a8-b8ac6f902f00",  reloaded.getRelations().get("subject").getId());
-    assertEquals("ib:Afsluitboom",                        reloaded.getRelations().get("object").getId());
   }
 }
