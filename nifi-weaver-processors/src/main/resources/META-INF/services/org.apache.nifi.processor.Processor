@@ -18,6 +18,7 @@ com.weaverplatform.nifi.individual.CreateIndividualProperty
 com.weaverplatform.nifi.individual.CreateValueProperty    
 com.weaverplatform.nifi.individual.GetIdFromProperty
 com.weaverplatform.nifi.individual.IndividualExists
+com.weaverplatform.nifi.individual.PropertyExists
 com.weaverplatform.nifi.individual.WipeProcessor
 com.weaverplatform.nifi.individual.XmiImporter
 com.weaverplatform.nifi.view.CreateView
