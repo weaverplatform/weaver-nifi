@@ -59,8 +59,6 @@ public class XmiImporter extends FlowFileProcessor {
       }
     });
 
-//    getWeaver().close();
-
     session.transfer(flowFile, ORIGINAL);
   }
 }

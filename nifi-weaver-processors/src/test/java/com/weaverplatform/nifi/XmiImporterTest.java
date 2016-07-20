@@ -17,11 +17,9 @@
 package com.weaverplatform.nifi;
 
 import com.google.common.io.Resources;
-import com.weaverplatform.nifi.individual.CreateIndividual;
+import com.weaverplatform.nifi.individual.XmiImporter;
 import com.weaverplatform.nifi.util.WeaverProperties;
-import com.weaverplatform.sdk.Entity;
 import com.weaverplatform.sdk.Weaver;
-import com.weaverplatform.sdk.json.request.ReadPayload;
 import com.weaverplatform.sdk.websocket.WeaverSocket;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -40,11 +38,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Date;
 import java.util.Properties;
-import java.util.UUID;
-
-import static org.junit.Assert.assertEquals;
 
 
 public class XmiImporterTest {
@@ -55,7 +49,6 @@ public class XmiImporterTest {
   private static String WEAVER_URL;
   private static String WEAVER_DATASET;
 
-  public static final int BATCH_NUM = 1;
 
   @BeforeClass
   public static void beforeClass() throws IOException {
@@ -86,117 +79,10 @@ public class XmiImporterTest {
     System.out.println(new File(getClass().getClassLoader().getResource("nifi.properties").getFile()).toString());
     Properties props = System.getProperties();
     props.setProperty("nifi.properties.file.path", new File(getClass().getClassLoader().getResource("nifi.properties").getFile()).toString());
-    testRunner = TestRunners.newTestRunner(CreateIndividual.class);
+    testRunner = TestRunners.newTestRunner(XmiImporter.class);
   }
 
-  @Test
-  public void testIndividualCreationWithName() {
 
-    String id = UUID.randomUUID().toString();
-
-
-    InputStream cont = new ByteArrayInputStream("Test".getBytes());
-
-    ProcessSession session = testRunner.getProcessSessionFactory().createSession();
-    FlowFile flowFile = session.create();
-    flowFile = session.importFrom(cont, flowFile);
-    flowFile = session.putAttribute(flowFile, "id", id);
-    flowFile = session.putAttribute(flowFile, "name", "Name is set");
-
-    testRunner.setProperty(CreateIndividual.INDIVIDUAL_ATTRIBUTE, "id");
-    testRunner.setProperty(CreateIndividual.NAME_ATTRIBUTE, "name");
-    testRunner.setProperty(CreateIndividual.SOURCE_STATIC, "testSource");
-
-    // Add the flowfile to the runner
-    testRunner.enqueue(flowFile);
-
-    // Run the enqueued content, it also takes an int = number of contents queued
-    testRunner.run();
-
-    Entity reloaded = weaver.get(id, new ReadPayload.Opts(-1));
-    assertEquals("Name is set",  reloaded.getAttributes().get("name"));
-    assertEquals("testSource",  reloaded.getAttributes().get("source"));
-
-  }
-
-  @Test
-  public void testIndividualCreationWithPostponedName() {
-
-    String id = UUID.randomUUID().toString();
-
-
-    InputStream cont = new ByteArrayInputStream("Test".getBytes());
-
-    ProcessSession session = testRunner.getProcessSessionFactory().createSession();
-    FlowFile flowFile1 = session.create();
-    flowFile1 = session.importFrom(cont, flowFile1);
-    flowFile1 = session.putAttribute(flowFile1, "id", id);
-//    flowFile = session.putAttribute(flowFile, "name", "Name is set");
-    flowFile1 = session.putAttribute(flowFile1, "source", "partly");
-
-    testRunner.setProperty(CreateIndividual.INDIVIDUAL_ATTRIBUTE, "id");
-    testRunner.setProperty(CreateIndividual.SOURCE_ATTRIBUTE, "source");
-    testRunner.setProperty(CreateIndividual.IS_ADDIFYING, "true");
-    testRunner.enqueue(flowFile1);
-    testRunner.run();
-
-    Entity reloaded = weaver.get(id, new ReadPayload.Opts(-1));
-    assertEquals("Unnamed",  reloaded.getAttributes().get("name"));
-    assertEquals("partly",  reloaded.getAttributes().get("source"));
-
-
-
-    cont = new ByteArrayInputStream("Test".getBytes());
-    session = testRunner.getProcessSessionFactory().createSession();
-    FlowFile flowFile2 = session.create();
-    flowFile2 = session.importFrom(cont, flowFile2);
-    flowFile2 = session.putAttribute(flowFile2, "id", id);
-    flowFile2 = session.putAttribute(flowFile2, "name", "Name is set");
-    flowFile2 = session.putAttribute(flowFile2, "source", "complete");
-
-    testRunner.enqueue(flowFile2);
-    testRunner.setProperty(CreateIndividual.NAME_ATTRIBUTE, "name");
-    testRunner.run();
-
-
-
-
-    reloaded = weaver.get(id, new ReadPayload.Opts(-1));
-    assertEquals("Name is set",  reloaded.getAttributes().get("name"));
-    assertEquals("complete",  reloaded.getAttributes().get("source"));
-
-  }
-
-  @Test
-  public void testIndividualCreationWithNameForPerformance() {
-
-    long then = new Date().getTime();
-
-    int runsLeft = BATCH_NUM;
-    while(runsLeft-- > 0) {
-
-      InputStream cont = new ByteArrayInputStream("Test".getBytes());
-
-      ProcessSession session = testRunner.getProcessSessionFactory().createSession();
-      FlowFile flowFile = session.create();
-      flowFile = session.importFrom(cont, flowFile);
-      flowFile = session.putAttribute(flowFile, "id", UUID.randomUUID().toString());
-      flowFile = session.putAttribute(flowFile, "name", "Name is set");
-
-      testRunner.setProperty(CreateIndividual.INDIVIDUAL_ATTRIBUTE, "id");
-      testRunner.setProperty(CreateIndividual.NAME_ATTRIBUTE, "name");
-      testRunner.setProperty(CreateIndividual.SOURCE_STATIC, "testSource");
-
-      // Add the flowfile to the runner
-      testRunner.enqueue(flowFile);
-
-      // Run the enqueued content, it also takes an int = number of contents queued
-      testRunner.run();
-    }
-
-    long now = new Date().getTime();
-    System.out.println(now - then);
-  }
 
   @Test
   public void testOnTrigger() {
@@ -204,39 +90,19 @@ public class XmiImporterTest {
     try {
 
       // Random info and simulate flowfile (with attributes) passed through to this processor in early state
-      String file = "line.txt";
+      String file = "xmi.xml";
       byte[] contents = FileUtils.readFileToByteArray(new File(getClass().getClassLoader().getResource(file).getFile()));
       InputStream in = new ByteArrayInputStream(contents);
       InputStream cont = new ByteArrayInputStream(IOUtils.toByteArray(in));
       ProcessSession session = testRunner.getProcessSessionFactory().createSession();
       FlowFile f = session.create();
       f = session.importFrom(cont, f);
-      f = session.putAttribute(f, "id", "cio5u54ts00023j6ku6j3j1jg"); //"816ee370-4274-e211-a3a8-b8ac6f902f00");
-
-      String connectionUrl = "http://weaver.test.ib.weaverplatform.com";
-
-      //from nifi-envi the user specifies this dynamic attribute, which to look for on the flowfile later
-      // Add properties (required)
-      testRunner.setProperty(CreateIndividual.WEAVER, connectionUrl);//"http://localhost:9487");
-      testRunner.setProperty(CreateIndividual.INDIVIDUAL_ATTRIBUTE, "id"); // RDF_TYPE_STATIC: ib:Afsluitboom
 
       // Add the flowfile to the runner
       testRunner.enqueue(f);
 
       // Run the enqueued content, it also takes an int = number of contents queued
       testRunner.run();
-
-      Weaver weaver = new Weaver();
-      weaver.connect(new WeaverSocket(new URI(connectionUrl)));
-
-      Entity e = weaver.get("cio5u54ts00023j6ku6j3j1jg");
-      System.out.println(e.getId());
-
-//            //get original flowfile contents
-//            List<MockFlowFile> results = testRunner.getFlowFilesForRelationship("original");
-//            MockFlowFile result = results.get(0);
-//            String resultValue = new String(testRunner.getContentAsByteArray(result));
-//            System.out.println(resultValue);
 
     } catch (Exception e) {
       e.printStackTrace();

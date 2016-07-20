@@ -22,7 +22,6 @@ import com.weaverplatform.nifi.util.WeaverProperties;
 import com.weaverplatform.sdk.Entity;
 import com.weaverplatform.sdk.Weaver;
 import com.weaverplatform.sdk.json.request.ReadPayload;
-import com.weaverplatform.sdk.model.Dataset;
 import com.weaverplatform.sdk.websocket.WeaverSocket;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -83,9 +82,6 @@ public class CreateIndividualTest {
     weaver = new Weaver();
     weaver.connect(new WeaverSocket(new URI(WEAVER_URL)));
     weaver.wipe();
-
-    // Create dataset
-    Entity dataset = new Dataset(weaver, WEAVER_DATASET).create();
 
     System.out.println(new File(getClass().getClassLoader().getResource("nifi.properties").getFile()).toString());
     Properties props = System.getProperties();

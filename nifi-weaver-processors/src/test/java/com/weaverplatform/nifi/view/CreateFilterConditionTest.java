@@ -69,7 +69,7 @@ public class CreateFilterConditionTest {
     weaver.wipe();
     
     // Create dataset
-    dataset = new Dataset(weaver, WEAVER_DATASET).create();
+    dataset = new Dataset(weaver, WEAVER_DATASET).get(WEAVER_DATASET);
 
     
     // Create view

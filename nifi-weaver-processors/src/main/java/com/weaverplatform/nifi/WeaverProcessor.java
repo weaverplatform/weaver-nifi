@@ -44,9 +44,6 @@ public abstract class WeaverProcessor extends AbstractProcessor {
   
   @Override
   protected void init(final ProcessorInitializationContext context) {
-    
-    getLogger().error("init started");
-
     descriptors.add(WEAVER);
   }
   
@@ -72,7 +69,7 @@ public abstract class WeaverProcessor extends AbstractProcessor {
     try {
       dataset = weaver.get(datasetId);
     } catch(EntityNotFoundException e) {
-      new Dataset(weaver, datasetId).create();
+      new Dataset(weaver, datasetId).get(datasetId);
       dataset = weaver.get(datasetId);
     }
     return dataset;

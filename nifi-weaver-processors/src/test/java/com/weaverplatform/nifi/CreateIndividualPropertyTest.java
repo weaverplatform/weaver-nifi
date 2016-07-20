@@ -70,7 +70,7 @@ public class CreateIndividualPropertyTest {
     weaver.wipe();
 
     // Create dataset
-    dataset = new Dataset(weaver, WEAVER_DATASET).create();
+    dataset = new Dataset(weaver, WEAVER_DATASET).get(WEAVER_DATASET);
     datasetObjects = weaver.get(dataset.getRelations().get("objects").getId());
 
     System.out.println(new File(getClass().getClassLoader().getResource("nifi.properties").getFile()).toString());

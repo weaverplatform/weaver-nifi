@@ -155,7 +155,7 @@ public class CreateIndividualProperty extends FlowFileProcessor {
       } catch (EntityNotFoundException e) {
         Map<String, String> attributes = new HashMap<>();
         attributes.put("source", source);
-        subjectEntity =  createIndividual(subjectId, attributes);
+        subjectEntity = createIndividual(subjectId, attributes);
         datasetObjects.linkEntity(id, subjectEntity.toShallowEntity());
       }
 
