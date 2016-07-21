@@ -1,6 +1,7 @@
 package com.weaverplatform.nifi.individual;
 
 import com.weaverplatform.sdk.*;
+import com.weaverplatform.sdk.json.request.ReadPayload;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
@@ -107,7 +108,7 @@ public class CreateValueProperty extends FlowFileProcessor {
       throw new RuntimeException("Either subject, predicate or object could not be interpreted!");
     }
 
-    Entity individual = weaver.get(subject);
+    Entity individual = weaver.get(subject, new ReadPayload.Opts(1));
 
     Map<String, ShallowEntity> relations = new HashMap<>();
     relations.put("subject", individual.toShallowEntity());

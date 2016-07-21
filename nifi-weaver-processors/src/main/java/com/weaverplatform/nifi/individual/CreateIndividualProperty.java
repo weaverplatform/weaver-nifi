@@ -1,6 +1,7 @@
 package com.weaverplatform.nifi.individual;
 
 import com.weaverplatform.sdk.*;
+import com.weaverplatform.sdk.json.request.ReadPayload;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
@@ -120,10 +121,10 @@ public class CreateIndividualProperty extends FlowFileProcessor {
     if(!isAddifying) {
 
       // Get the parent object from weaver
-      Entity subjectEntity = weaver.get(subjectId);
+      Entity subjectEntity = weaver.get(subjectId, new ReadPayload.Opts(1));
 
       // Find the object
-      Entity objectEntity = weaver.get(objectId);
+      Entity objectEntity = weaver.get(objectId, new ReadPayload.Opts(0));
 
       Map<String, String> entityAttributes = new HashMap<>();
       entityAttributes.put("predicate", predicate);
@@ -137,7 +138,7 @@ public class CreateIndividualProperty extends FlowFileProcessor {
 
       // Fetch parent collection
       ShallowEntity shallowCollection = subjectEntity.getRelations().get("properties");
-      Entity entityProperties = weaver.get(shallowCollection.getId());
+      Entity entityProperties = weaver.get(shallowCollection.getId(), new ReadPayload.Opts(0));
 
       // Link individual to collection
       entityProperties.linkEntity(individualProperty.getId(), individualProperty.toShallowEntity());
@@ -162,7 +163,7 @@ public class CreateIndividualProperty extends FlowFileProcessor {
       // Find the object
       Entity objectEntity;
       try {
-        objectEntity = weaver.get(objectId);
+        objectEntity = weaver.get(objectId, new ReadPayload.Opts(0));
       } catch (EntityNotFoundException e) {
         Map<String, String> attributes = new HashMap<>();
         attributes.put("source", source);
@@ -182,7 +183,7 @@ public class CreateIndividualProperty extends FlowFileProcessor {
 
       // Fetch parent collection
       ShallowEntity shallowCollection = subjectEntity.getRelations().get("properties");
-      Entity entityProperties = weaver.get(shallowCollection.getId());
+      Entity entityProperties = weaver.get(shallowCollection.getId(), new ReadPayload.Opts(0));
 
       // Link individual to collection
       entityProperties.linkEntity(individualProperty.getId(), individualProperty.toShallowEntity());

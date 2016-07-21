@@ -3,6 +3,7 @@ package com.weaverplatform.nifi.view;
 import com.weaverplatform.nifi.individual.FlowFileProcessor;
 import com.weaverplatform.sdk.Entity;
 import com.weaverplatform.sdk.Weaver;
+import com.weaverplatform.sdk.json.request.ReadPayload;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
@@ -94,7 +95,7 @@ public class CreateFilter extends FlowFileProcessor {
       throw new ProcessException("No attribute value could be found for the ID");
     }
     String viewId = flowFile.getAttribute(context.getProperty(VIEW_ID_ATTRIBUTE).getValue());
-    Entity view = weaver.get(viewId);
+    Entity view = weaver.get(viewId, new ReadPayload.Opts(1));
 
     // Prepare filter attributes
     Map<String, String> attributes = new HashMap<>();
@@ -109,7 +110,7 @@ public class CreateFilter extends FlowFileProcessor {
     filter.linkEntity("conditions", weaver.collection().toShallowEntity());
     
     // Attach to view
-    Entity filters = weaver.get(view.getRelations().get("filters").getId());
+    Entity filters = weaver.get(view.getRelations().get("filters").getId(), new ReadPayload.Opts(1));
     filters.linkEntity(filter.getId(), filter.toShallowEntity());
     
     // Close connection
