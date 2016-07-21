@@ -146,7 +146,7 @@ public class CreateIndividualProperty extends FlowFileProcessor {
     
     } else {
 
-      Entity datasetObjects = weaver.get(getDataset().getRelations().get("objects").getId());
+      Entity datasetObjects = getDatasetObjects();
 
       // Get the parent object from weaver
       Entity subjectEntity;

@@ -84,7 +84,7 @@ public class CreateIndividual extends FlowFileProcessor {
 
 
 
-    Entity datasetObjects = weaver.get(getDataset().getRelations().get("objects").getId());
+    Entity datasetObjects = getDatasetObjects();
 
     String id = idFromOptions(context, flowFile, true);
     String name = getName(context);

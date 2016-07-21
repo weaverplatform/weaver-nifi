@@ -66,7 +66,7 @@ public class CreateView extends FlowFileProcessor {
     Weaver weaver = getWeaver();
 
 
-    datasetViews = weaver.get(getDataset().getRelations().get("models").getId());
+    datasetViews = getDatasetViews();
 
     ProcessorLog log  = this.getLogger();
     FlowFile flowFile = this.getFlowFile();
