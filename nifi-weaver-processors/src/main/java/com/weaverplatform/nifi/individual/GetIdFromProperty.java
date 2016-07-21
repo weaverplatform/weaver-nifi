@@ -4,6 +4,7 @@ import com.weaverplatform.sdk.Entity;
 import com.weaverplatform.sdk.ShallowEntity;
 import com.weaverplatform.sdk.Weaver;
 import com.weaverplatform.sdk.json.request.QueryFromFilter;
+import com.weaverplatform.sdk.json.request.ReadPayload;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
@@ -121,11 +122,11 @@ public class GetIdFromProperty extends FlowFileProcessor {
       try {
 
         // Get the subject from weaver
-        Entity individual = weaver.get(subject);
+        Entity individual = weaver.get(subject, new ReadPayload.Opts(1));
         Map<String, ShallowEntity> relations = individual.getRelations();
         for(ShallowEntity relationShell : relations.values()) {
           
-          Entity relation = weaver.get(relationShell.getId());
+          Entity relation = weaver.get(relationShell.getId(), new ReadPayload.Opts(1));
           if(predicate.equals(relation.getAttributeValue("predicate"))) {
             log.info("found object");
             Object relationshipObject = relation.getAttributeValue("object");
@@ -154,12 +155,11 @@ public class GetIdFromProperty extends FlowFileProcessor {
     } else if(subject == null) {
       try {
 
-        // Get the object from weaver
-        Entity individual = weaver.get(object);
+
 
         ArrayList<QueryFromFilter> filters = new ArrayList<>();
         QueryFromFilter filter = new QueryFromFilter(predicate);
-        filter.addIndividualCondition("this-individual", individual.getId());
+        filter.addIndividualCondition("this-individual", object);
         filters.add(filter);
         ArrayList<String> results = weaver.queryFromFilters(filters);
 

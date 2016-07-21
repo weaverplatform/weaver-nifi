@@ -4,6 +4,7 @@ import com.weaverplatform.sdk.Entity;
 import com.weaverplatform.sdk.EntityNotFoundException;
 import com.weaverplatform.sdk.ShallowEntity;
 import com.weaverplatform.sdk.Weaver;
+import com.weaverplatform.sdk.json.request.ReadPayload;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
@@ -86,9 +87,9 @@ public class PropertyExists extends EntityProcessor {
     String id = idFromOptions(context, flowFile, false);
     Entity entity;
     try {
-      entity = weaver.get(id);
+      entity = weaver.get(id, new ReadPayload.Opts(1));
     }
-    catch(EntityNotFoundException e){
+    catch(EntityNotFoundException e) {
       throw new ProcessException("Individual does not exists");
     }
     
@@ -100,9 +101,9 @@ public class PropertyExists extends EntityProcessor {
     }
     
     // Load relations and check for existence
-    Entity relations = weaver.get(relationsShallow.getId());
+    Entity relations = weaver.get(relationsShallow.getId(), new ReadPayload.Opts(1));
     for(ShallowEntity shallowRelation : relations.getRelations().values()){
-      Entity relation = weaver.get(shallowRelation.getId());
+      Entity relation = weaver.get(shallowRelation.getId(), new ReadPayload.Opts(1));
       if(predicate.equals(relation.getAttributes().get("predicate"))){
         session.transfer(flowFile, EXISTS);
         return;

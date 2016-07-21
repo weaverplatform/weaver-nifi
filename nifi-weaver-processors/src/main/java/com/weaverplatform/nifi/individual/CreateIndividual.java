@@ -1,6 +1,7 @@
 package com.weaverplatform.nifi.individual;
 
 import com.weaverplatform.sdk.*;
+import com.weaverplatform.sdk.json.request.ReadPayload;
 import com.weaverplatform.sdk.json.request.UpdateEntityAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
@@ -84,7 +85,7 @@ public class CreateIndividual extends FlowFileProcessor {
 
 
 
-    Entity datasetObjects = weaver.get(getDataset().getRelations().get("objects").getId());
+    Entity datasetObjects = getDatasetObjects();
 
     String id = idFromOptions(context, flowFile, true);
     String name = getName(context);
@@ -109,7 +110,7 @@ public class CreateIndividual extends FlowFileProcessor {
     } else {
 
       try {
-        individual = weaver.get(id);
+        individual = weaver.get(id, new ReadPayload.Opts(1));
         if (!"".equals(name)) {
 
           // Check if name attribute is set
