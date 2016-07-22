@@ -11,6 +11,7 @@ import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.components.PropertyDescriptor;
+import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.logging.ProcessorLog;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
@@ -83,12 +84,15 @@ public class CreateIndividual extends FlowFileProcessor {
     super.onTrigger(context, session);
     Weaver weaver = getWeaver();
 
-
+    FlowFile flowFile = session.get();
+    if (flowFile == null) {
+      throw new RuntimeException("FlowFile is null");
+    }
 
     Entity datasetObjects = getDatasetObjects();
 
     String id = idFromOptions(context, flowFile, true);
-    String name = getName(context);
+    String name = getName(context, flowFile);
     String source = getSource(context, flowFile);
 
     // Should we be prepared for the possibility that this entity has already been created.
@@ -146,7 +150,7 @@ public class CreateIndividual extends FlowFileProcessor {
     individual.linkEntity("properties", propertiesCollection.toShallowEntity());
   }
 
-  private String getName(ProcessContext context) {
+  private String getName(ProcessContext context, FlowFile flowFile) {
     String name = valueFromOptions(context, flowFile, NAME_ATTRIBUTE, NAME_STATIC, "Unnamed");
 
     // Check for prefix

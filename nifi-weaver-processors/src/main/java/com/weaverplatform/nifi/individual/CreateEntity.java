@@ -10,6 +10,7 @@ import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.components.PropertyDescriptor;
+import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.logging.ProcessorLog;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
@@ -86,6 +87,11 @@ public class CreateEntity extends FlowFileProcessor {
     super.onTrigger(context, session);
     Weaver weaver = getWeaver();
 
+    FlowFile flowFile = session.get();
+    if (flowFile == null) {
+      throw new RuntimeException("FlowFile is null");
+    }
+
     String id = idFromOptions(context, flowFile, true);
 
     // Create entity by user attribute
@@ -99,8 +105,6 @@ public class CreateEntity extends FlowFileProcessor {
     
     String entityType = context.getProperty(ENTITY_TYPE).getValue();
 
-    log.info("create entity of type "+entityType+" with id "+id+" with name " + name);
-
     Entity individual = weaver.add(attributes, entityType, id);
     
     if(context.getProperty(COLLECTION_LIST).isSet()) {
@@ -111,8 +115,6 @@ public class CreateEntity extends FlowFileProcessor {
         individual.linkEntity(collectionName, collection.toShallowEntity());
       }
     }
-
-//    weaver.close();
 
     if(context.getProperty(ATTRIBUTE_NAME_FOR_ID).isSet()) {
       String attributeNameForId = context.getProperty(ATTRIBUTE_NAME_FOR_ID).getValue();

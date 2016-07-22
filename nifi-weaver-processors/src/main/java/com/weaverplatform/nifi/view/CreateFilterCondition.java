@@ -86,7 +86,10 @@ public class CreateFilterCondition extends FlowFileProcessor {
     super.onTrigger(context, session);
     Weaver weaver = getWeaver();
 
-    FlowFile flowFile = this.getFlowFile();
+    FlowFile flowFile = session.get();
+    if (flowFile == null) {
+      throw new RuntimeException("FlowFile is null");
+    }
     
     // Get the Filter entity by ID
     if(!context.getProperty(FILTER_ID_ATTRIBUTE).isSet()) {
@@ -100,7 +103,7 @@ public class CreateFilterCondition extends FlowFileProcessor {
     // Prepare condition attributes
     Map<String, String> attributes = new HashMap<>();
     attributes.put("conditiontype", conditionType);
-    attributes.put("operation",     context.getProperty(OPERATION_STATIC).getValue());
+    attributes.put("operation", context.getProperty(OPERATION_STATIC).getValue());
 
     
     
@@ -128,9 +131,6 @@ public class CreateFilterCondition extends FlowFileProcessor {
     // Attach to filter conditions
     Entity conditions = weaver.get(filter.getRelations().get("conditions").getId(), new ReadPayload.Opts(1));
     conditions.linkEntity(condition.getId(), condition.toShallowEntity());
-    
-    // Close connection
-//    weaver.close();
 
     // Pass ID of this condition as attribute in flowfile
     if(context.getProperty(ATTRIBUTE_NAME_FOR_CONDITION_ID).isSet()) {

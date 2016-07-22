@@ -10,6 +10,7 @@ import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.components.PropertyDescriptor;
+import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.logging.ProcessorLog;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
@@ -71,6 +72,15 @@ public class CreateValueProperty extends FlowFileProcessor {
     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
     .build();
 
+  public static final PropertyDescriptor IS_UPDATING = new PropertyDescriptor
+      .Builder().name("Updating")
+      .description("Optional, default true. If is true it will check if the " +
+          "property already exists, and only update the value if this new " +
+          "value is new. If is false, create new property regardless.")
+      .required(false)
+      .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
+      .build();
+
 
   @Override
   protected void init(final ProcessorInitializationContext context) {
@@ -83,6 +93,7 @@ public class CreateValueProperty extends FlowFileProcessor {
     descriptors.add(PREDICATE_STATIC);
     descriptors.add(OBJECT_ATTRIBUTE);
     descriptors.add(OBJECT_STATIC);
+    descriptors.add(IS_UPDATING);
     this.properties = Collections.unmodifiableList(descriptors);
     
 
@@ -97,12 +108,20 @@ public class CreateValueProperty extends FlowFileProcessor {
     super.onTrigger(context, session);
     Weaver weaver = getWeaver();
 
+    FlowFile flowFile = session.get();
+    if (flowFile == null) {
+      throw new RuntimeException("FlowFile is null");
+    }
+
     String id = idFromOptions(context, flowFile, true);
     String source = getSource(context, flowFile);
 
     String subject = valueFromOptions(context, flowFile, SUBJECT_ATTRIBUTE, SUBJECT_STATIC, null);
     String predicate = valueFromOptions(context, flowFile, PREDICATE_ATTRIBUTE, PREDICATE_STATIC, null);
     String object = valueFromOptions(context, flowFile, OBJECT_ATTRIBUTE, OBJECT_STATIC, null);
+
+
+    boolean isUpdating = !context.getProperty(IS_UPDATING).isSet() || context.getProperty(IS_UPDATING).asBoolean();
 
     if(subject == null || predicate == null || object == null) {
       throw new RuntimeException("Either subject, predicate or object could not be interpreted!");
@@ -123,8 +142,6 @@ public class CreateValueProperty extends FlowFileProcessor {
 
     Entity propertiesEntity = weaver.get(properties.getId());
     propertiesEntity.linkEntity(valueProperty.getId(), valueProperty.toShallowEntity());
-
-//    weaver.close();
 
     if(context.getProperty(ATTRIBUTE_NAME_FOR_ID).isSet()) {
       String attributeNameForId = context.getProperty(ATTRIBUTE_NAME_FOR_ID).getValue();
