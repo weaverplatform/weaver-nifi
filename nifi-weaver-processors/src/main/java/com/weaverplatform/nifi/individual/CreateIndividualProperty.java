@@ -130,7 +130,7 @@ public class CreateIndividualProperty extends FlowFileProcessor {
 
     // Should we be prepared for the possibility that this entity has already been created.
     boolean isAddifying = !context.getProperty(IS_ADDIFYING).isSet() || context.getProperty(IS_ADDIFYING).asBoolean();
-    boolean isUpdating = !context.getProperty(IS_UPDATING).isSet() || context.getProperty(IS_UPDATING).asBoolean();
+    boolean isUpdating =  !context.getProperty(IS_UPDATING).isSet()  || context.getProperty(IS_UPDATING).asBoolean();
 
     // Create without checking for entities prior existence
     if(!isAddifying) {
@@ -209,7 +209,6 @@ public class CreateIndividualProperty extends FlowFileProcessor {
       flowFile = session.putAttribute(flowFile, attributeNameForId, id);
     }
     session.transfer(flowFile, ORIGINAL);
-
   }
 
   @Override
