@@ -53,12 +53,16 @@ public class XmiImporter extends FlowFileProcessor {
       throw new RuntimeException("FlowFile is null");
     }
 
+
+    String source = getSource(context, flowFile);
+
     session.read(flowFile, new InputStreamCallback() {
 
       @Override
       public void process(InputStream inputStream) throws IOException {
 
         ImportXmi importXmi = new ImportXmi(getWeaver(), datasetId);
+        importXmi.setSource(source);
         importXmi.readFromInputStream(inputStream);
         importXmi.run();
 
