@@ -84,7 +84,6 @@ public class CreateFilter extends FlowFileProcessor {
   @Override
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
     
-    super.onTrigger(context, session);
     Weaver weaver = getWeaver();
 
     ProcessorLog log  = this.getLogger();

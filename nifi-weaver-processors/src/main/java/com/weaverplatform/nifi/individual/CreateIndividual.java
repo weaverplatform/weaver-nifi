@@ -91,7 +91,6 @@ public class CreateIndividual extends FlowFileProcessor {
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
     final ProcessorLog log = this.getLogger();
     
-    super.onTrigger(context, session);
     Weaver weaver = getWeaver();
 
     FlowFile flowFile = session.get();
