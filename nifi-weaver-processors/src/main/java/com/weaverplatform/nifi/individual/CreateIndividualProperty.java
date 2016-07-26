@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @SeeAlso({})
 @ReadsAttributes({@ReadsAttribute(attribute="", description="")})
 @WritesAttributes({@WritesAttribute(attribute="", description="")})
-public class CreateIndividualProperty extends FlowFileProcessor {
+public class CreateIndividualProperty extends PropertyProcessor {
 
   public static final PropertyDescriptor SUBJECT_ATTRIBUTE = new PropertyDescriptor
     .Builder().name("Subject Attribute")
@@ -113,7 +113,6 @@ public class CreateIndividualProperty extends FlowFileProcessor {
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
     final ProcessorLog log = this.getLogger();
 
-    super.onTrigger(context, session);
     Weaver weaver = getWeaver();
 
     FlowFile flowFile = session.get();
@@ -133,42 +132,24 @@ public class CreateIndividualProperty extends FlowFileProcessor {
     boolean isUpdating =  !context.getProperty(IS_UPDATING).isSet()  || context.getProperty(IS_UPDATING).asBoolean();
 
     // Create without checking for entities prior existence
+    Entity subjectEntity, objectEntity;
+    boolean createdSubject = false;
     if(!isAddifying) {
-
       // Get the parent object from weaver
-      Entity subjectEntity = weaver.get(subjectId, new ReadPayload.Opts(1));
+      subjectEntity = weaver.get(subjectId, new ReadPayload.Opts(1));
 
       // Find the object
-      Entity objectEntity = weaver.get(objectId, new ReadPayload.Opts(0));
-
-      Map<String, String> entityAttributes = new HashMap<>();
-      entityAttributes.put("predicate", predicate);
-      entityAttributes.put("source", source);
-
-      Map<String, ShallowEntity> relations = new HashMap<>();
-      relations.put("subject", subjectEntity.toShallowEntity());
-      relations.put("object", objectEntity.toShallowEntity());
-
-      Entity individualProperty = weaver.add(entityAttributes, EntityType.INDIVIDUAL_PROPERTY, id, relations);
-
-      // Fetch parent collection
-      ShallowEntity shallowCollection = subjectEntity.getRelations().get("properties");
-      Entity entityProperties = weaver.get(shallowCollection.getId(), new ReadPayload.Opts(0));
-
-      // Link individual to collection
-      entityProperties.linkEntity(individualProperty.getId(), individualProperty.toShallowEntity());
-
-
-    
+      objectEntity = weaver.get(objectId, new ReadPayload.Opts(0));
+      
+      
     } else {
-
       Entity datasetObjects = getDatasetObjects();
 
       // Get the parent object from weaver
-      Entity subjectEntity;
       try {
         subjectEntity = weaver.get(subjectId);
       } catch (EntityNotFoundException e) {
+        createdSubject = true;
         Map<String, String> attributes = new HashMap<>();
         attributes.put("source", source);
         subjectEntity = createIndividual(subjectId, attributes);
@@ -176,7 +157,6 @@ public class CreateIndividualProperty extends FlowFileProcessor {
       }
 
       // Find the object
-      Entity objectEntity;
       try {
         objectEntity = weaver.get(objectId, new ReadPayload.Opts(0));
       } catch (EntityNotFoundException e) {
@@ -185,24 +165,25 @@ public class CreateIndividualProperty extends FlowFileProcessor {
         objectEntity = createIndividual(objectId, attributes);
         datasetObjects.linkEntity(id, objectEntity.toShallowEntity());
       }
-
-      Map<String, String> entityAttributes = new HashMap<>();
-      entityAttributes.put("predicate", predicate);
-      entityAttributes.put("source", source);
-
-      Map<String, ShallowEntity> relations = new HashMap<>();
-      relations.put("subject", subjectEntity.toShallowEntity());
-      relations.put("object", objectEntity.toShallowEntity());
-
-      Entity individualProperty = weaver.add(entityAttributes, EntityType.INDIVIDUAL_PROPERTY, id, relations);
-
-      // Fetch parent collection
-      ShallowEntity shallowCollection = subjectEntity.getRelations().get("properties");
-      Entity entityProperties = weaver.get(shallowCollection.getId(), new ReadPayload.Opts(0));
-
-      // Link individual to collection
-      entityProperties.linkEntity(individualProperty.getId(), individualProperty.toShallowEntity());
     }
+
+
+    if(isUpdating && !createdSubject){
+      Entity existingProperty = getProperty(weaver, subjectEntity, predicate, source);
+      if(existingProperty != null){
+
+        if(!existingProperty.getRelations().get("object").getId().equals(objectEntity.getId())){
+          existingProperty.updateEntityLink("object", objectEntity.toShallowEntity());
+        }
+      }
+      else {
+        createNewProperty(weaver, id, subjectEntity, predicate, objectEntity, source);
+      }
+    }
+    else {
+      createNewProperty(weaver, id, subjectEntity, predicate, objectEntity, source);
+    }
+    
 
     if (context.getProperty(ATTRIBUTE_NAME_FOR_ID).isSet()) {
       String attributeNameForId = context.getProperty(ATTRIBUTE_NAME_FOR_ID).getValue();
@@ -235,5 +216,24 @@ public class CreateIndividualProperty extends FlowFileProcessor {
     individual.linkEntity("annotations", entityAnnotations.toShallowEntity());
 
     return individual;
+  }
+
+  private void createNewProperty(Weaver weaver, String id, Entity subjectEntity, String predicate, Entity objectEntity, String source) {
+    Map<String, String> entityAttributes = new HashMap<>();
+    entityAttributes.put("predicate", predicate);
+    entityAttributes.put("source", source);
+
+    Map<String, ShallowEntity> relations = new HashMap<>();
+    relations.put("subject", subjectEntity.toShallowEntity());
+    relations.put("object", objectEntity.toShallowEntity());
+
+    Entity individualProperty = weaver.add(entityAttributes, EntityType.INDIVIDUAL_PROPERTY, id, relations);
+
+    // Fetch parent collection
+    ShallowEntity shallowCollection = subjectEntity.getRelations().get("properties");
+    Entity entityProperties = weaver.get(shallowCollection.getId(), new ReadPayload.Opts(0));
+
+    // Link individual to collection
+    entityProperties.linkEntity(individualProperty.getId(), individualProperty.toShallowEntity());
   }
 }

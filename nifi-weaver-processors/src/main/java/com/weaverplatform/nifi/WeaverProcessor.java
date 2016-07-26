@@ -116,9 +116,6 @@ public abstract class WeaverProcessor extends AbstractProcessor {
     return datasetObjects;
   }
 
-  public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
-  }
-
   @Override
   public Set<Relationship> getRelationships() {
     return this.relationships.get();
