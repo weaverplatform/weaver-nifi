@@ -88,7 +88,10 @@ public class CreateFilter extends FlowFileProcessor {
     Weaver weaver = getWeaver();
 
     ProcessorLog log  = this.getLogger();
-    FlowFile flowFile = this.getFlowFile();
+    FlowFile flowFile = session.get();
+    if (flowFile == null) {
+      throw new RuntimeException("FlowFile is null");
+    }
     
     // Get the View entity by ID
     if(!context.getProperty(VIEW_ID_ATTRIBUTE).isSet()) {
@@ -112,9 +115,6 @@ public class CreateFilter extends FlowFileProcessor {
     // Attach to view
     Entity filters = weaver.get(view.getRelations().get("filters").getId(), new ReadPayload.Opts(1));
     filters.linkEntity(filter.getId(), filter.toShallowEntity());
-    
-    // Close connection
-//    weaver.close();
 
     // Pass ID of this filter as attribute in flowfile
     if(context.getProperty(ATTRIBUTE_NAME_FOR_FILTER_ID).isSet()) {

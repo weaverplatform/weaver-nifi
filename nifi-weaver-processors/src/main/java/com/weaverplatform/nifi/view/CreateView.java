@@ -65,11 +65,13 @@ public class CreateView extends FlowFileProcessor {
     super.onTrigger(context, session);
     Weaver weaver = getWeaver();
 
-
     datasetViews = getDatasetViews();
 
     ProcessorLog log  = this.getLogger();
-    FlowFile flowFile = this.getFlowFile();
+    FlowFile flowFile = session.get();
+    if (flowFile == null) {
+      throw new RuntimeException("FlowFile is null");
+    }
     
     String id = idFromOptions(context, flowFile, true);
 
@@ -80,7 +82,6 @@ public class CreateView extends FlowFileProcessor {
 
     // Create view
     Entity view = weaver.add(attributes, EntityType.VIEW, id);
-    log.info("Create view with name " + name + " and id: " + id);
 
     // Attach to dataset
     datasetViews.linkEntity(id, view.toShallowEntity());
@@ -88,9 +89,6 @@ public class CreateView extends FlowFileProcessor {
     // Give it the minimal collections it needs to be qualified as a valid view
     view.linkEntity("filters", weaver.collection().toShallowEntity());
     view.linkEntity("objects", weaver.collection().toShallowEntity());
-    
-    // Close connection
-//    weaver.close();
 
     // Pass ID of this view as attribute in flowfile
     if(context.getProperty(ATTRIBUTE_NAME_FOR_ID).isSet()) {

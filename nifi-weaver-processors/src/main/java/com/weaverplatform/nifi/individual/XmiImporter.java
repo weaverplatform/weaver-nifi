@@ -9,6 +9,7 @@ import org.apache.nifi.annotation.behavior.WritesAttributes;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
+import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
@@ -47,12 +48,21 @@ public class XmiImporter extends FlowFileProcessor {
 
     String datasetId = NiFiProperties.getInstance().get(WeaverProperties.DATASET).toString();
 
+    FlowFile flowFile = session.get();
+    if (flowFile == null) {
+      throw new RuntimeException("FlowFile is null");
+    }
+
+
+    String source = getSource(context, flowFile);
+
     session.read(flowFile, new InputStreamCallback() {
 
       @Override
       public void process(InputStream inputStream) throws IOException {
 
         ImportXmi importXmi = new ImportXmi(getWeaver(), datasetId);
+        importXmi.setSource(source);
         importXmi.readFromInputStream(inputStream);
         importXmi.run();
 

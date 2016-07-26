@@ -10,6 +10,7 @@ import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.components.PropertyDescriptor;
+import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.logging.ProcessorLog;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
@@ -80,6 +81,15 @@ public class CreateIndividualProperty extends FlowFileProcessor {
       .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
       .build();
 
+  public static final PropertyDescriptor IS_UPDATING = new PropertyDescriptor
+      .Builder().name("Updating")
+      .description("Optional, default true. If is true it will check if the " +
+          "property already exists, and only update the value if this new " +
+          "value is new. If is false, create new property regardless.")
+      .required(false)
+      .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
+      .build();
+
   @Override
   protected void init(final ProcessorInitializationContext context) {
 
@@ -92,6 +102,7 @@ public class CreateIndividualProperty extends FlowFileProcessor {
     descriptors.add(OBJECT_ATTRIBUTE);
     descriptors.add(OBJECT_STATIC);
     descriptors.add(IS_ADDIFYING);
+    descriptors.add(IS_UPDATING);
     this.properties = Collections.unmodifiableList(descriptors);
 
 
@@ -105,6 +116,11 @@ public class CreateIndividualProperty extends FlowFileProcessor {
     super.onTrigger(context, session);
     Weaver weaver = getWeaver();
 
+    FlowFile flowFile = session.get();
+    if (flowFile == null) {
+      throw new RuntimeException("FlowFile is null");
+    }
+
     String id = idFromOptions(context, flowFile, true);
     String source = getSource(context, flowFile);
     
@@ -112,10 +128,9 @@ public class CreateIndividualProperty extends FlowFileProcessor {
     String predicate = valueFromOptions(context, flowFile, PREDICATE_ATTRIBUTE, PREDICATE_STATIC, null);
     String objectId = valueFromOptions(context, flowFile, OBJECT_ATTRIBUTE, OBJECT_STATIC, null);
 
-    log.info("Creating Individual Property with SUBJECT: " + subjectId + ", OBJECT: " + objectId +  ", and PREDICATE: " + predicate + ".");
-
     // Should we be prepared for the possibility that this entity has already been created.
     boolean isAddifying = !context.getProperty(IS_ADDIFYING).isSet() || context.getProperty(IS_ADDIFYING).asBoolean();
+    boolean isUpdating =  !context.getProperty(IS_UPDATING).isSet()  || context.getProperty(IS_UPDATING).asBoolean();
 
     // Create without checking for entities prior existence
     if(!isAddifying) {
@@ -189,14 +204,11 @@ public class CreateIndividualProperty extends FlowFileProcessor {
       entityProperties.linkEntity(individualProperty.getId(), individualProperty.toShallowEntity());
     }
 
-//    weaver.close();
-
     if (context.getProperty(ATTRIBUTE_NAME_FOR_ID).isSet()) {
       String attributeNameForId = context.getProperty(ATTRIBUTE_NAME_FOR_ID).getValue();
       flowFile = session.putAttribute(flowFile, attributeNameForId, id);
     }
     session.transfer(flowFile, ORIGINAL);
-
   }
 
   @Override

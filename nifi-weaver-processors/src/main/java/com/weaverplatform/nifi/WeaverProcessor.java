@@ -77,7 +77,7 @@ public abstract class WeaverProcessor extends AbstractProcessor {
     if(dataset == null) {
       String datasetId = NiFiProperties.getInstance().get(WeaverProperties.DATASET).toString();
       try {
-        dataset = weaver.get(datasetId);
+        dataset = weaver.get(datasetId, new ReadPayload.Opts(1));
       } catch(EntityNotFoundException e) {
         new Dataset(weaver, datasetId).get(datasetId);
         dataset = weaver.get(datasetId);

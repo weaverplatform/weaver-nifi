@@ -11,6 +11,7 @@ import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.components.PropertyDescriptor;
+import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.logging.ProcessorLog;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
@@ -60,6 +61,15 @@ public class CreateIndividual extends FlowFileProcessor {
       .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
       .build();
 
+  public static final PropertyDescriptor IS_UPDATING = new PropertyDescriptor
+      .Builder().name("Updating")
+      .description("Optional, default true. If is true it will check if the " +
+          "property already exists, and only update the value if this new " +
+          "value is new. If is false, create new property regardless.")
+      .required(false)
+      .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
+      .build();
+
   private Entity individual;
   private Entity propertiesCollection;
 
@@ -72,6 +82,7 @@ public class CreateIndividual extends FlowFileProcessor {
     descriptors.add(NAME_ATTRIBUTE);
     descriptors.add(NAME_STATIC);
     descriptors.add(IS_ADDIFYING);
+    descriptors.add(IS_UPDATING);
     this.properties = Collections.unmodifiableList(descriptors);
     this.relationships = new AtomicReference<>(relationshipSet);
   }
@@ -83,16 +94,20 @@ public class CreateIndividual extends FlowFileProcessor {
     super.onTrigger(context, session);
     Weaver weaver = getWeaver();
 
-
+    FlowFile flowFile = session.get();
+    if (flowFile == null) {
+      throw new RuntimeException("FlowFile is null");
+    }
 
     Entity datasetObjects = getDatasetObjects();
 
     String id = idFromOptions(context, flowFile, true);
-    String name = getName(context);
+    String name = getName(context, flowFile);
     String source = getSource(context, flowFile);
 
     // Should we be prepared for the possibility that this entity has already been created.
     boolean isAddifying = !context.getProperty(IS_ADDIFYING).isSet() || context.getProperty(IS_ADDIFYING).asBoolean();
+    boolean isUpdating =  !context.getProperty(IS_UPDATING).isSet()  || context.getProperty(IS_UPDATING).asBoolean();
 
     // Create without checking for entities prior existence
     if(!isAddifying) {
@@ -146,7 +161,7 @@ public class CreateIndividual extends FlowFileProcessor {
     individual.linkEntity("properties", propertiesCollection.toShallowEntity());
   }
 
-  private String getName(ProcessContext context) {
+  private String getName(ProcessContext context, FlowFile flowFile) {
     String name = valueFromOptions(context, flowFile, NAME_ATTRIBUTE, NAME_STATIC, "Unnamed");
 
     // Check for prefix

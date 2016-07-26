@@ -101,6 +101,11 @@ public class GetIdFromProperty extends FlowFileProcessor {
     super.onTrigger(context, session);
     Weaver weaver = getWeaver();
 
+    FlowFile flowFile = session.get();
+    if (flowFile == null) {
+      throw new RuntimeException("FlowFile is null");
+    }
+
     if(!context.getProperty(ATTRIBUTE_NAME_FOR_ID).isSet()) {
       throw new ProcessException("Setting Attribute Name For Id is required!");
     }
@@ -128,15 +133,13 @@ public class GetIdFromProperty extends FlowFileProcessor {
           
           Entity relation = weaver.get(relationShell.getId(), new ReadPayload.Opts(1));
           if(predicate.equals(relation.getAttributeValue("predicate"))) {
-            log.info("found object");
+
             Object relationshipObject = relation.getAttributeValue("object");
             if(relationshipObject instanceof Entity) {
-              log.info("actually an entity");
-              sendFoundId(session, attributeNameForId, ((Entity)relationshipObject).getId());
+              sendFoundId(session, attributeNameForId, ((Entity)relationshipObject).getId(), flowFile);
             } else
             if(relationshipObject instanceof ShallowEntity) {
-              log.info("actually a shallowentity");
-              sendFoundId(session, attributeNameForId, ((ShallowEntity)relationshipObject).getId());
+              sendFoundId(session, attributeNameForId, ((ShallowEntity)relationshipObject).getId(), flowFile);
             } else {
               log.info("skipping, was a string and not an entity (GetIdFromProperty)");
             }
@@ -164,7 +167,7 @@ public class GetIdFromProperty extends FlowFileProcessor {
         ArrayList<String> results = weaver.queryFromFilters(filters);
 
         for(String subjectId : results) {
-          sendFoundId(session, attributeNameForId, subjectId);
+          sendFoundId(session, attributeNameForId, subjectId, flowFile);
         }
 
       } catch (IndexOutOfBoundsException e) {
@@ -175,11 +178,9 @@ public class GetIdFromProperty extends FlowFileProcessor {
     } else {
       throw new ProcessException("Either subject or object should be empty for GetIdeFromProperty.");
     }
-
-//    weaver.close();
   }
   
-  private void sendFoundId(ProcessSession session, String attributeName, String id) {
+  private void sendFoundId(ProcessSession session, String attributeName, String id, FlowFile flowFile) {
     FlowFile clonedFlowFile = session.clone(flowFile);
     clonedFlowFile = session.putAttribute(clonedFlowFile, attributeName, id);
     session.transfer(clonedFlowFile, ORIGINAL);
