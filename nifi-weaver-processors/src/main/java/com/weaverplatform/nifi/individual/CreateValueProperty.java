@@ -81,6 +81,14 @@ public class CreateValueProperty extends PropertyProcessor {
       .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
       .build();
 
+  public static final PropertyDescriptor PREVENT_DUPLICATION = new PropertyDescriptor
+      .Builder().name("Prevent duplication")
+      .description("Optional, default true. Do not create a property if it is " +
+          "already existing.")
+      .required(false)
+      .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
+      .build();
+
 
   @Override
   protected void init(final ProcessorInitializationContext context) {
@@ -94,6 +102,7 @@ public class CreateValueProperty extends PropertyProcessor {
     descriptors.add(OBJECT_ATTRIBUTE);
     descriptors.add(OBJECT_STATIC);
     descriptors.add(IS_UPDATING);
+    descriptors.add(PREVENT_DUPLICATION);
     this.properties = Collections.unmodifiableList(descriptors);
     
 
@@ -126,13 +135,18 @@ public class CreateValueProperty extends PropertyProcessor {
     Entity individual = weaver.get(subject, new ReadPayload.Opts(1));
 
     boolean isUpdating = !context.getProperty(IS_UPDATING).isSet() || context.getProperty(IS_UPDATING).asBoolean();
+    boolean preventDuplication =  !context.getProperty(PREVENT_DUPLICATION).isSet() || context.getProperty(PREVENT_DUPLICATION).asBoolean();
     
-    if(isUpdating){
+    if(preventDuplication || isUpdating) {
       Entity existingProperty = getProperty(weaver, individual, predicate, source);
-      if(existingProperty != null){
-        
-        if(!existingProperty.getAttributes().get("object").equals(object)){
-          existingProperty.updateEntityWithValue("object", object);
+      if(existingProperty != null) {
+
+        if(!existingProperty.getAttributes().get("object").equals(object)) {
+          if(isUpdating) {
+            existingProperty.updateEntityWithValue("object", object);
+          } else {
+            createNewProperty(weaver,individual, id, predicate, object, source);
+          }
         }
       }
       else {

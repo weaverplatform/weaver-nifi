@@ -90,6 +90,14 @@ public class CreateIndividualProperty extends PropertyProcessor {
       .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
       .build();
 
+  public static final PropertyDescriptor PREVENT_DUPLICATION = new PropertyDescriptor
+      .Builder().name("Prevent duplication")
+      .description("Optional, default true. Do not create a property if it is " +
+          "already existing.")
+      .required(false)
+      .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
+      .build();
+
   @Override
   protected void init(final ProcessorInitializationContext context) {
 
@@ -103,6 +111,7 @@ public class CreateIndividualProperty extends PropertyProcessor {
     descriptors.add(OBJECT_STATIC);
     descriptors.add(IS_ADDIFYING);
     descriptors.add(IS_UPDATING);
+    descriptors.add(PREVENT_DUPLICATION);
     this.properties = Collections.unmodifiableList(descriptors);
 
 
@@ -128,8 +137,9 @@ public class CreateIndividualProperty extends PropertyProcessor {
     String objectId = valueFromOptions(context, flowFile, OBJECT_ATTRIBUTE, OBJECT_STATIC, null);
 
     // Should we be prepared for the possibility that this entity has already been created.
-    boolean isAddifying = !context.getProperty(IS_ADDIFYING).isSet() || context.getProperty(IS_ADDIFYING).asBoolean();
-    boolean isUpdating =  !context.getProperty(IS_UPDATING).isSet()  || context.getProperty(IS_UPDATING).asBoolean();
+    boolean isAddifying =         !context.getProperty(IS_ADDIFYING).isSet() || context.getProperty(IS_ADDIFYING).asBoolean();
+    boolean isUpdating =          !context.getProperty(IS_UPDATING).isSet()  || context.getProperty(IS_UPDATING).asBoolean();
+    boolean preventDuplication =  !context.getProperty(PREVENT_DUPLICATION).isSet()  || context.getProperty(PREVENT_DUPLICATION).asBoolean();
 
     // Create without checking for entities prior existence
     Entity subjectEntity, objectEntity;
@@ -167,23 +177,24 @@ public class CreateIndividualProperty extends PropertyProcessor {
       }
     }
 
-
-    if(isUpdating && !createdSubject){
+    if((preventDuplication || isUpdating) && !createdSubject) {
       Entity existingProperty = getProperty(weaver, subjectEntity, predicate, source);
       if(existingProperty != null){
 
         if(!existingProperty.getRelations().get("object").getId().equals(objectEntity.getId())){
-          existingProperty.updateEntityLink("object", objectEntity.toShallowEntity());
+          if(isUpdating) {
+            existingProperty.updateEntityLink("object", objectEntity.toShallowEntity());
+          } else {
+            createNewProperty(weaver, id, subjectEntity, predicate, objectEntity, source);
+          }
         }
       }
       else {
         createNewProperty(weaver, id, subjectEntity, predicate, objectEntity, source);
       }
-    }
-    else {
+    } else {
       createNewProperty(weaver, id, subjectEntity, predicate, objectEntity, source);
     }
-    
 
     if (context.getProperty(ATTRIBUTE_NAME_FOR_ID).isSet()) {
       String attributeNameForId = context.getProperty(ATTRIBUTE_NAME_FOR_ID).getValue();
