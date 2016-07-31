@@ -1,6 +1,10 @@
 package com.weaverplatform.nifi.individual;
 
-import com.weaverplatform.sdk.*;
+import com.weaverplatform.nifi.util.LockRegistry;
+import com.weaverplatform.sdk.Entity;
+import com.weaverplatform.sdk.EntityType;
+import com.weaverplatform.sdk.ShallowEntity;
+import com.weaverplatform.sdk.Weaver;
 import com.weaverplatform.sdk.json.request.ReadPayload;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
@@ -150,7 +154,15 @@ public class CreateValueProperty extends PropertyProcessor {
         }
       }
       else {
-        createNewProperty(weaver,individual, id, predicate, object, source);
+        String propertyHash = individual.getId()+predicate+object+source;
+        try {
+          if(!LockRegistry.request("created", propertyHash)) {
+            createNewProperty(weaver, individual, id, predicate, object, source);
+            LockRegistry.release("created", propertyHash);
+          }
+        } catch (InterruptedException e) {
+          throw new ProcessException(e);
+        }
       }
     }
     else {

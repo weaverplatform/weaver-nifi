@@ -10,7 +10,7 @@ import com.weaverplatform.sdk.json.request.ReadPayload;
  */
 public abstract class PropertyProcessor extends FlowFileProcessor {
 
-  protected Entity getProperty(Weaver weaver, Entity subject, String predicate, String source){
+  protected Entity getProperty(Weaver weaver, Entity subject, String predicate, String source) {
     ShallowEntity relationsShallow = subject.getRelations().get("properties");
 
     if (relationsShallow == null){

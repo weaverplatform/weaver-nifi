@@ -1,5 +1,6 @@
 package com.weaverplatform.nifi.individual;
 
+import com.weaverplatform.nifi.util.LockRegistry;
 import com.weaverplatform.sdk.*;
 import com.weaverplatform.sdk.json.request.ReadPayload;
 import com.weaverplatform.sdk.json.request.UpdateEntityAttribute;
@@ -139,7 +140,15 @@ public class CreateIndividual extends FlowFileProcessor {
         attributes.put("name", name);
         attributes.put("source", source);
 
-        createIndividual(id, attributes);
+        try {
+          if(!LockRegistry.request("created", id)) {
+            createIndividual(id, attributes);
+            LockRegistry.release("created", id);
+          }
+        } catch (InterruptedException e2) {
+          throw new ProcessException(e2);
+        }
+
 
         // Attach to dataset
         datasetObjects.linkEntity(id, individual.toShallowEntity());
