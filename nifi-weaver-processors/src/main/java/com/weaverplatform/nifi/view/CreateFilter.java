@@ -23,6 +23,8 @@ import org.apache.nifi.processor.util.StandardValidators;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Tags({"weaver, create, view, filter"})
@@ -89,7 +91,7 @@ public class CreateFilter extends FlowFileProcessor {
     ProcessorLog log  = this.getLogger();
     FlowFile flowFile = session.get();
     if (flowFile == null) {
-      throw new RuntimeException("FlowFile is null");
+      return;
     }
     
     // Get the View entity by ID
@@ -100,7 +102,7 @@ public class CreateFilter extends FlowFileProcessor {
     Entity view = weaver.get(viewId, new ReadPayload.Opts(1));
 
     // Prepare filter attributes
-    Map<String, String> attributes = new HashMap<>();
+    ConcurrentMap<String, String> attributes = new ConcurrentHashMap<>();
     attributes.put("label",     context.getProperty(LABEL_STATIC).getValue());
     attributes.put("celltype",  context.getProperty(CELLTYPE_STATIC).getValue());
     attributes.put("predicate", context.getProperty(PREDICATE_STATIC).getValue());

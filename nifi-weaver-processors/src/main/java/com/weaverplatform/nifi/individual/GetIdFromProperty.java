@@ -24,6 +24,7 @@ import org.apache.nifi.processor.util.StandardValidators;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Tags({"weaver, get, property"})
@@ -102,7 +103,7 @@ public class GetIdFromProperty extends FlowFileProcessor {
 
     FlowFile flowFile = session.get();
     if (flowFile == null) {
-      throw new RuntimeException("FlowFile is null");
+      return;
     }
 
     if(!context.getProperty(ATTRIBUTE_NAME_FOR_ID).isSet()) {
@@ -127,7 +128,7 @@ public class GetIdFromProperty extends FlowFileProcessor {
 
         // Get the subject from weaver
         Entity individual = weaver.get(subject, new ReadPayload.Opts(1));
-        Map<String, ShallowEntity> relations = individual.getRelations();
+        ConcurrentMap<String, ShallowEntity> relations = individual.getRelations();
         for(ShallowEntity relationShell : relations.values()) {
           
           Entity relation = weaver.get(relationShell.getId(), new ReadPayload.Opts(1));

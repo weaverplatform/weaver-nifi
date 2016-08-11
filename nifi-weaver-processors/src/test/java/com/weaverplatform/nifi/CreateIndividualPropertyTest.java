@@ -28,6 +28,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.Assert.assertEquals;
 
@@ -82,7 +83,7 @@ public class CreateIndividualPropertyTest {
   @Test
   public void testProcessor() {
 
-    HashMap<String, String> subjectAttributes = new HashMap<>();
+    ConcurrentHashMap<String, String> subjectAttributes = new ConcurrentHashMap<>();
     subjectAttributes.put("name", "subjectThing");
     Entity subjectEntity = weaver.add(subjectAttributes, EntityType.INDIVIDUAL, "816ee370-4274-e211-a3a8-b8ac6f902f00");
     subjectEntity.linkEntity("properties", weaver.collection().toShallowEntity());
@@ -90,7 +91,7 @@ public class CreateIndividualPropertyTest {
     // Attach to dataset
     datasetObjects.linkEntity(subjectEntity.getId(), subjectEntity.toShallowEntity());
 
-    HashMap<String, String> objectAttributes = new HashMap<>();
+    ConcurrentHashMap<String, String> objectAttributes = new ConcurrentHashMap<>();
     objectAttributes.put("name", "objectThing");
     Entity objectEntity = weaver.add(objectAttributes, EntityType.INDIVIDUAL, "ib:Afsluitboom");
     objectEntity.linkEntity("properties", weaver.collection().toShallowEntity());

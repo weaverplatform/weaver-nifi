@@ -8,6 +8,7 @@ import com.weaverplatform.sdk.json.request.ReadPayload;
 import com.weaverplatform.sdk.model.Dataset;
 import com.weaverplatform.sdk.websocket.WeaverSocket;
 import org.apache.nifi.components.PropertyDescriptor;
+import org.apache.nifi.logging.ProcessorLog;
 import org.apache.nifi.processor.*;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
@@ -52,6 +53,7 @@ public abstract class WeaverProcessor extends AbstractProcessor {
   }
   
   public Weaver getWeaver() {
+    final ProcessorLog log = this.getLogger();
     if(weaverUrl == null) {
       weaverUrl = NiFiProperties.getInstance().get(WeaverProperties.URL).toString();
     }

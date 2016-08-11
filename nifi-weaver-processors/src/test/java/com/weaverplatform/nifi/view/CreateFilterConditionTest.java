@@ -25,6 +25,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import static org.junit.Assert.*;
 
@@ -73,7 +75,7 @@ public class CreateFilterConditionTest {
 
     
     // Create view
-    Map<String, String> viewAttributes = new HashMap<>();
+    ConcurrentMap<String, String> viewAttributes = new ConcurrentHashMap<>();
     viewAttributes.put("name", "View");
     view = weaver.add(viewAttributes, EntityType.VIEW);
 
@@ -86,7 +88,7 @@ public class CreateFilterConditionTest {
     views.linkEntity(view.getId(), view.toShallowEntity());
     
     // Create filter
-    Map<String, String> filterAttributes = new HashMap<>();
+    ConcurrentMap<String, String> filterAttributes = new ConcurrentHashMap<>();
     filterAttributes.put("label", "Type");
     filterAttributes.put("celltype", "individual");
     filterAttributes.put("predicate", "rdf:type");
@@ -100,7 +102,7 @@ public class CreateFilterConditionTest {
     filters.linkEntity(filter.getId(), filter.toShallowEntity());
     
     // Create individual for condition
-    Map<String, String> individualAttributes = new HashMap<>();
+    ConcurrentMap<String, String> individualAttributes = new ConcurrentHashMap<>();
     individualAttributes.put("name", "Tree");
     individual = weaver.add(individualAttributes, EntityType.INDIVIDUAL, "weav:Tree");
 

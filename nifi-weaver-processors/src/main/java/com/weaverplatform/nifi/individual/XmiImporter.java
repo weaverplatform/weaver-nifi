@@ -48,8 +48,9 @@ public class XmiImporter extends FlowFileProcessor {
     String datasetId = NiFiProperties.getInstance().get(WeaverProperties.DATASET).toString();
 
     FlowFile flowFile = session.get();
+
     if (flowFile == null) {
-      throw new RuntimeException("FlowFile is null");
+      return;
     }
 
 

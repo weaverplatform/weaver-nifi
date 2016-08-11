@@ -23,6 +23,8 @@ import org.apache.nifi.processor.util.StandardValidators;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Tags({"weaver, create, individual"})
@@ -96,7 +98,7 @@ public class CreateIndividual extends FlowFileProcessor {
 
     FlowFile flowFile = session.get();
     if (flowFile == null) {
-      throw new RuntimeException("FlowFile is null");
+      return;
     }
 
     Entity datasetObjects = getDatasetObjects();
@@ -105,14 +107,24 @@ public class CreateIndividual extends FlowFileProcessor {
     String name = getName(context, flowFile);
     String source = getSource(context, flowFile);
 
+    if(id.equals("") || id.contains(" ") || id == null) {
+
+      //Write flowfile to error heap, and send it through the flow without any other processing
+      new FlowErrorCatcher(context, session, this.getIdentifier()).dump(flowFile);
+      //log.warn("Subject ("+(subjectId.equals("") ? 'X' : "") + "), object ("+(objectId.equals("") ? 'X' : "") + "), or predicate ("+(predicate.equals("") ? 'X' : "") + ") was empty");
+      session.transfer(flowFile, ORIGINAL);
+      return;
+    }
+
     // Should we be prepared for the possibility that this entity has already been created.
-    boolean isAddifying = !context.getProperty(IS_ADDIFYING).isSet() || context.getProperty(IS_ADDIFYING).asBoolean();
+    //boolean isAddifying = !context.getProperty(IS_ADDIFYING).isSet() || context.getProperty(IS_ADDIFYING).asBoolean();
+    boolean isAddifying = true;
     boolean isUpdating =  !context.getProperty(IS_UPDATING).isSet()  || context.getProperty(IS_UPDATING).asBoolean();
 
     // Create without checking for entities prior existence
-    if(!isAddifying) {
+    if(false) {
 
-      Map<String, String> attributes = new HashMap<>();
+      ConcurrentMap<String, String> attributes = new ConcurrentHashMap<>();
       attributes.put("name", name);
       attributes.put("source", source);
 
@@ -121,7 +133,7 @@ public class CreateIndividual extends FlowFileProcessor {
       // Attach to dataset
       datasetObjects.linkEntity(id, individual.toShallowEntity());
 
-    // Check to see whether it exists before creation
+      // Check to see whether it exists before creation
     } else {
 
       try {
@@ -136,19 +148,11 @@ public class CreateIndividual extends FlowFileProcessor {
         }
       } catch(EntityNotFoundException e) {
 
-        Map<String, String> attributes = new HashMap<>();
+        ConcurrentMap<String, String> attributes = new ConcurrentHashMap<>();
         attributes.put("name", name);
         attributes.put("source", source);
 
-        try {
-          if(!LockRegistry.request("created", id)) {
-            createIndividual(id, attributes);
-            LockRegistry.release("created", id);
-          }
-        } catch (InterruptedException e2) {
-          throw new ProcessException(e2);
-        }
-
+        createIndividual(id, attributes);
 
         // Attach to dataset
         datasetObjects.linkEntity(id, individual.toShallowEntity());
@@ -161,7 +165,7 @@ public class CreateIndividual extends FlowFileProcessor {
     session.transfer(flowFile, ORIGINAL);
   }
 
-  private void createIndividual(String id, Map<String, String> attributes) {
+  private void createIndividual(String id, ConcurrentMap<String, String> attributes) {
     Weaver weaver = getWeaver();
 
     individual = weaver.add(attributes, EntityType.INDIVIDUAL, id);

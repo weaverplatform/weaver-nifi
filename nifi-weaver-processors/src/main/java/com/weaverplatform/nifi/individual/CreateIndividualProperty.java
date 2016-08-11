@@ -1,5 +1,6 @@
 package com.weaverplatform.nifi.individual;
 
+import com.google.gson.Gson;
 import com.weaverplatform.nifi.util.LockRegistry;
 import com.weaverplatform.sdk.*;
 import com.weaverplatform.sdk.json.request.ReadPayload;
@@ -22,6 +23,8 @@ import org.apache.nifi.processor.util.StandardValidators;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Tags({"weaver, create, individualproperty"})
@@ -127,7 +130,7 @@ public class CreateIndividualProperty extends PropertyProcessor {
 
     FlowFile flowFile = session.get();
     if (flowFile == null) {
-      throw new RuntimeException("FlowFile is null");
+      return;
     }
 
     String id = idFromOptions(context, flowFile, true);
@@ -137,9 +140,21 @@ public class CreateIndividualProperty extends PropertyProcessor {
     String predicate = valueFromOptions(context, flowFile, PREDICATE_ATTRIBUTE, PREDICATE_STATIC, null);
     String objectId = valueFromOptions(context, flowFile, OBJECT_ATTRIBUTE, OBJECT_STATIC, null);
 
+    if(subjectId.equals("") || objectId.equals("") || predicate.equals("")
+        || subjectId == null || objectId == null || predicate == null
+        || subjectId.contains(" ") || objectId.contains(" ") || predicate.contains(" ")) {
+
+      //Write flowfile to error heap, and send it through the flow without any other processing
+      new FlowErrorCatcher(context, session, this.getIdentifier()).dump(flowFile);
+      //log.warn("Subject ("+(subjectId.equals("") ? 'X' : "") + "), object ("+(objectId.equals("") ? 'X' : "") + "), or predicate ("+(predicate.equals("") ? 'X' : "") + ") was empty");
+      session.transfer(flowFile, ORIGINAL);
+      return;
+    }
+
     // Should we be prepared for the possibility that this entity has already been created.
-    boolean isAddifying =         !context.getProperty(IS_ADDIFYING).isSet() || context.getProperty(IS_ADDIFYING).asBoolean();
-    boolean isUpdating =          !context.getProperty(IS_UPDATING).isSet()  || context.getProperty(IS_UPDATING).asBoolean();
+    //boolean isAddifying =         !context.getProperty(IS_ADDIFYING).isSet() || context.getProperty(IS_ADDIFYING).asBoolean();
+    boolean isAddifying = true;
+    boolean isUpdating =         !context.getProperty(IS_UPDATING).isSet()  || context.getProperty(IS_UPDATING).asBoolean();
     boolean preventDuplication =  !context.getProperty(PREVENT_DUPLICATION).isSet()  || context.getProperty(PREVENT_DUPLICATION).asBoolean();
 
     // Create without checking for entities prior existence
@@ -161,7 +176,7 @@ public class CreateIndividualProperty extends PropertyProcessor {
         subjectEntity = weaver.get(subjectId);
       } catch (EntityNotFoundException e) {
         createdSubject = true;
-        Map<String, String> attributes = new HashMap<>();
+        ConcurrentMap<String, String> attributes = new ConcurrentHashMap<>();
         attributes.put("source", source);
         subjectEntity = createIndividual(subjectId, attributes);
         datasetObjects.linkEntity(id, subjectEntity.toShallowEntity());
@@ -171,7 +186,7 @@ public class CreateIndividualProperty extends PropertyProcessor {
       try {
         objectEntity = weaver.get(objectId, new ReadPayload.Opts(0));
       } catch (EntityNotFoundException e) {
-        Map<String, String> attributes = new HashMap<>();
+        ConcurrentMap<String, String> attributes = new ConcurrentHashMap<>();
         attributes.put("source", source);
         objectEntity = createIndividual(objectId, attributes);
         datasetObjects.linkEntity(id, objectEntity.toShallowEntity());
@@ -224,7 +239,7 @@ public class CreateIndividualProperty extends PropertyProcessor {
       .build();
   }
 
-  private Entity createIndividual(String id, Map<String, String> attributes) {
+  private Entity createIndividual(String id, ConcurrentMap<String, String> attributes) {
     Weaver weaver = getWeaver();
 
     Entity individual = weaver.add(attributes, EntityType.INDIVIDUAL, id);
@@ -239,21 +254,27 @@ public class CreateIndividualProperty extends PropertyProcessor {
   }
 
   private void createNewProperty(Weaver weaver, String id, Entity subjectEntity, String predicate, Entity objectEntity, String source) {
-    Map<String, String> entityAttributes = new HashMap<>();
-    entityAttributes.put("predicate", predicate);
+    ConcurrentMap<String, String> entityAttributes = new ConcurrentHashMap<>();
     entityAttributes.put("source", source);
 
-    Map<String, ShallowEntity> relations = new HashMap<>();
+    ConcurrentMap<String, ShallowEntity> relations = new ConcurrentHashMap<>();
     relations.put("subject", subjectEntity.toShallowEntity());
     relations.put("object", objectEntity.toShallowEntity());
+    relations.put("predicate", new ShallowEntity(predicate, "$PREDICATE"));
 
     Entity individualProperty = weaver.add(entityAttributes, EntityType.INDIVIDUAL_PROPERTY, id, relations);
 
     // Fetch parent collection
-    ShallowEntity shallowCollection = subjectEntity.getRelations().get("properties");
-    Entity entityProperties = weaver.get(shallowCollection.getId(), new ReadPayload.Opts(0));
+    try {
+      ShallowEntity shallowCollection = subjectEntity.getRelations().get("properties");
+      Entity entityProperties = weaver.get(shallowCollection.getId(), new ReadPayload.Opts(0));
 
-    // Link individual to collection
-    entityProperties.linkEntity(individualProperty.getId(), individualProperty.toShallowEntity());
+      // Link individual to collection
+      entityProperties.linkEntity(individualProperty.getId(), individualProperty.toShallowEntity());
+    }
+    catch(NullPointerException e){
+      throw new ProcessException("Subject entity has no properties, id is: " + subjectEntity.getId());
+    }
+
   }
 }

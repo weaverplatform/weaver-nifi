@@ -5,6 +5,9 @@ import com.weaverplatform.sdk.ShallowEntity;
 import com.weaverplatform.sdk.Weaver;
 import com.weaverplatform.sdk.json.request.ReadPayload;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+
 /**
  * @author Mohamad Alamili
  */
@@ -19,6 +22,7 @@ public abstract class PropertyProcessor extends FlowFileProcessor {
 
     // Load relations and check for existence
     Entity relations = weaver.get(relationsShallow.getId(), new ReadPayload.Opts(1));
+
     for(ShallowEntity shallowRelation : relations.getRelations().values()){
       Entity relation = weaver.get(shallowRelation.getId(), new ReadPayload.Opts(1));
 

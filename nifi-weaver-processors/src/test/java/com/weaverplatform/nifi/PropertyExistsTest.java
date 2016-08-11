@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import static org.junit.Assert.assertEquals;
 
@@ -71,11 +73,11 @@ public class PropertyExistsTest {
     Entity objects = weaver.get(dataset.getRelations().get("objects").getId());
     
     // Create individuals
-    Map<String, String> attributes = new HashMap<>();
+    ConcurrentMap<String, String> attributes = new ConcurrentHashMap<>();
     attributes.put("name", "Individual With Properties");
     individualWithProperties = weaver.add(attributes, EntityType.INDIVIDUAL);
 
-    attributes = new HashMap<>();
+    attributes = new ConcurrentHashMap<>();
     attributes.put("name", "Individual Without Properties");
     individualWithoutProperties = weaver.add(attributes, EntityType.INDIVIDUAL);
 
@@ -84,19 +86,19 @@ public class PropertyExistsTest {
     individualWithProperties.linkEntity("properties", properties.toShallowEntity());
     
     // Add two properties
-    attributes = new HashMap<>();
+    attributes = new ConcurrentHashMap<>();
     attributes.put("predicate", "rdf:type");
-    
-    Map<String, ShallowEntity> relations = new HashMap<>();
+
+    ConcurrentMap<String, ShallowEntity> relations = new ConcurrentHashMap<>();
     relations.put("subject", individualWithProperties.toShallowEntity());
     relations.put("object", individualWithoutProperties.toShallowEntity());
     Entity property1 = weaver.add(attributes, EntityType.INDIVIDUAL_PROPERTY, UUID.randomUUID().toString(), relations);
     properties.linkEntity(property1.getId(), property1.toShallowEntity());
 
-    attributes = new HashMap<>();
+    attributes = new ConcurrentHashMap<>();
     attributes.put("predicate", "rdfs:label");
     attributes.put("object", "RDFS Label");
-    relations = new HashMap<>();
+    relations = new ConcurrentHashMap<>();
     relations.put("subject", individualWithProperties.toShallowEntity());
     
     Entity property2 = weaver.add(attributes, EntityType.VALUE_PROPERTY, UUID.randomUUID().toString(), relations);
