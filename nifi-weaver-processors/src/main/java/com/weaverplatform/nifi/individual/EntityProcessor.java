@@ -78,7 +78,7 @@ public abstract class EntityProcessor extends WeaverProcessor {
       fallback = UUID.randomUUID().toString();
     }
     
-    return "ins:" + valueFromOptions(context, flowFile, INDIVIDUAL_ATTRIBUTE, INDIVIDUAL_STATIC, fallback);
+    return valueFromOptions(context, flowFile, INDIVIDUAL_ATTRIBUTE, INDIVIDUAL_STATIC, fallback);
   }
   
   public String valueFromOptions(ProcessContext context, FlowFile flowFile, PropertyDescriptor attributeValue, PropertyDescriptor staticValue, String fallback) throws ProcessException {
