@@ -20,7 +20,6 @@ import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -157,15 +156,15 @@ public class CreateValueProperty extends PropertyProcessor {
     boolean preventDuplication =  !context.getProperty(PREVENT_DUPLICATION).isSet() || context.getProperty(PREVENT_DUPLICATION).asBoolean();
     
     if(preventDuplication || isUpdating) {
-      Entity existingProperty = getProperty(weaver, individual, predicate, source);
-      if(existingProperty != null) {
+      
+      Map<String,Entity> existingProperties = getProperty(weaver, individual, predicate);
+      
+      if(existingProperties != null) {
 
-        if(!existingProperty.getAttributes().get("object").equals(object)) {
-          if(isUpdating) {
-            existingProperty.updateEntityWithValue("object", object);
-          } else {
-            createNewProperty(weaver,individual, id, predicate, object, source);
-          }
+        boolean exactSameObject = existingProperties.containsKey(object);
+        
+        if(!exactSameObject) {
+          createNewProperty(weaver,individual, id, predicate, object, source);
         }
       }
       else {

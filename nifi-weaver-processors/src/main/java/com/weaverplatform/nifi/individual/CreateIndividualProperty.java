@@ -1,6 +1,5 @@
 package com.weaverplatform.nifi.individual;
 
-import com.google.gson.Gson;
 import com.weaverplatform.nifi.util.LockRegistry;
 import com.weaverplatform.sdk.*;
 import com.weaverplatform.sdk.json.request.ReadPayload;
@@ -19,9 +18,10 @@ import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -101,7 +101,9 @@ public class CreateIndividualProperty extends PropertyProcessor {
       .required(false)
       .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
       .build();
-
+  
+  public static final Logger logger = LoggerFactory.getLogger(CreateIndividualProperty.class);
+  
   @Override
   protected void init(final ProcessorInitializationContext context) {
 
@@ -152,10 +154,10 @@ public class CreateIndividualProperty extends PropertyProcessor {
     }
 
     // Should we be prepared for the possibility that this entity has already been created.
-    //boolean isAddifying =         !context.getProperty(IS_ADDIFYING).isSet() || context.getProperty(IS_ADDIFYING).asBoolean();
-    boolean isAddifying = true;
-    boolean isUpdating =         !context.getProperty(IS_UPDATING).isSet()  || context.getProperty(IS_UPDATING).asBoolean();
-    boolean preventDuplication =  !context.getProperty(PREVENT_DUPLICATION).isSet()  || context.getProperty(PREVENT_DUPLICATION).asBoolean();
+    boolean isAddifying =         !context.getProperty(IS_ADDIFYING).isSet() || context.getProperty(IS_ADDIFYING).asBoolean();
+    boolean isUpdating =          !context.getProperty(IS_UPDATING).isSet()  || context.getProperty(IS_UPDATING).asBoolean();
+//    boolean preventDuplication =  !context.getProperty(PREVENT_DUPLICATION).isSet()  || context.getProperty(PREVENT_DUPLICATION).asBoolean();
+    boolean preventDuplication = true;
 
     // Create without checking for entities prior existence
     Entity subjectEntity, objectEntity;
@@ -175,6 +177,8 @@ public class CreateIndividualProperty extends PropertyProcessor {
       try {
         subjectEntity = weaver.get(subjectId);
       } catch (EntityNotFoundException e) {
+        //logger.info("not found: " +subjectId);
+
         createdSubject = true;
         ConcurrentMap<String, String> attributes = new ConcurrentHashMap<>();
         attributes.put("source", source);
@@ -194,15 +198,25 @@ public class CreateIndividualProperty extends PropertyProcessor {
     }
 
     if((preventDuplication || isUpdating) && !createdSubject) {
-      Entity existingProperty = getProperty(weaver, subjectEntity, predicate, source);
-      if(existingProperty != null){
+      
+      Map<String,Entity> existingProperties = getProperty(weaver, subjectEntity, predicate);
 
-        if(!existingProperty.getRelations().get("object").getId().equals(objectEntity.getId())){
-          if(isUpdating) {
-            existingProperty.updateEntityLink("object", objectEntity.toShallowEntity());
-          } else {
-            createNewProperty(weaver, id, subjectEntity, predicate, objectEntity, source);
-          }
+      if (objectEntity.getId().equals("lib:Afsluitboom")){
+        //logger.info("subject: " +subjectEntity.getId());
+        //logger.info("predicate: " +predicate);
+        //logger.info("source: "    +source);
+      }
+      
+      if(existingProperties != null){
+        //logger.info("New: " + objectEntity.getId());
+
+        boolean exactSameObject = existingProperties.containsKey(objectEntity.getId());
+        //logger.info("Same object: " + exactSameObject);
+        
+        if(!exactSameObject){
+          createNewProperty(weaver, id, subjectEntity, predicate, objectEntity, source);
+        } else {
+          //logger.info("THE SAME! not doing anything");
         }
       }
       else {

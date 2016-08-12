@@ -5,15 +5,24 @@ import com.weaverplatform.sdk.ShallowEntity;
 import com.weaverplatform.sdk.Weaver;
 import com.weaverplatform.sdk.json.request.ReadPayload;
 
-import java.lang.reflect.Array;
-import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Mohamad Alamili
  */
 public abstract class PropertyProcessor extends FlowFileProcessor {
 
-  protected Entity getProperty(Weaver weaver, Entity subject, String predicate, String source) {
+  /**
+   * The key of the map is the ID of the object or the value of the object
+   * @param weaver
+   * @param subject
+   * @param predicate
+   * @return
+   */
+  protected Map<String, Entity> getProperty(Weaver weaver, Entity subject, String predicate) {
+    Map<String, Entity> foundProperties = new HashMap<>();
+    
     ShallowEntity relationsShallow = subject.getRelations().get("properties");
 
     if (relationsShallow == null){
@@ -26,15 +35,21 @@ public abstract class PropertyProcessor extends FlowFileProcessor {
     for(ShallowEntity shallowRelation : relations.getRelations().values()){
       Entity relation = weaver.get(shallowRelation.getId(), new ReadPayload.Opts(1));
 
-      String foundPredicate = relation.getAttributes().get("predicate");
-      String foundSource    = relation.getAttributes().get("source");
+      String foundPredicate = relation.getRelations().get("predicate").getId();
 
-      if(predicate.equals(foundPredicate) && source.equals(foundSource)){
-        return relation;
+      if(predicate.equals(foundPredicate)){
+        if (relation.getType().equals("$INDIVIDUAL_PROPERTY"))
+          foundProperties.put(relation.getRelations().get("object").getId(), relation);
+        else
+          foundProperties.put(relation.getAttributes().get("object"), relation);
       }
     }
 
     // Not found
-    return null;
+    if (foundProperties.isEmpty()){
+      return null;
+    }
+    else
+      return foundProperties;
   }
 }
