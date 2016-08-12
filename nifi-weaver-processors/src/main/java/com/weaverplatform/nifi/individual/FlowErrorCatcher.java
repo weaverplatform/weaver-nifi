@@ -1,16 +1,13 @@
 package com.weaverplatform.nifi.individual;
 
 import com.google.gson.Gson;
-import org.apache.nifi.logging.ProcessorLog;
+import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
-import org.apache.nifi.flowfile.FlowFile;
-import org.apache.nifi.processor.io.InputStreamCallback;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
 /**
@@ -28,16 +25,23 @@ public class FlowErrorCatcher {
     context = cntxt;
     session = sess;
     processorId = id;
-    path = "/Users/Moose/FlowErrors/";
+    path = "FlowErrors";
+    
+    File dir = new File(path);
+    if (!dir.exists()){
+      dir.mkdir();
+    }
   }
 
   public void dump(FlowFile flowFile) {
 
+    if (true) return;
+    
     //Write flowfile to error heap, and send it through the flow without any other processing
     String fileName = processorId + "  ***  " +  context.getName() + "  ***  " +  flowFile.getLastQueueDate();
-    Path file = Paths.get(path + fileName);
+    File file = new File(new File(path), fileName);
     try {
-      Files.write(file, new Gson().toJson(flowFile).getBytes(), StandardOpenOption.CREATE);
+      Files.write(file.toPath(), new Gson().toJson(flowFile).getBytes(), StandardOpenOption.CREATE);
     } catch (IOException e) {
       System.out.println("Couldn't write file " + e);
     }
