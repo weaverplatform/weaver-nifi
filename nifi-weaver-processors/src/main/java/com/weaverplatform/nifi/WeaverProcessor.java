@@ -62,7 +62,7 @@ public abstract class WeaverProcessor extends AbstractProcessor {
       weaverUrl = NiFiProperties.getInstance().get(WeaverProperties.URL).toString();
     }
     if(weaver == null) {
-      weaver = new Weaver();
+      weaver = new Weaver("ins:");
       try {
         weaver.connect(new WeaverSocket(new URI(weaverUrl)));
       } catch (URISyntaxException e) {
