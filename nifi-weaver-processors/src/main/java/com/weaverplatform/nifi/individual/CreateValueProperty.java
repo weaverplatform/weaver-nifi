@@ -1,5 +1,6 @@
 package com.weaverplatform.nifi.individual;
 
+import com.weaverplatform.nifi.util.LockRegistry;
 import com.weaverplatform.sdk.*;
 import com.weaverplatform.sdk.json.request.ReadPayload;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
@@ -19,8 +20,9 @@ import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Tags({"create, valueproperty, weaver"})
@@ -28,7 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @SeeAlso({})
 @ReadsAttributes({@ReadsAttribute(attribute="", description="")})
 @WritesAttributes({@WritesAttribute(attribute="", description="")})
-public class CreateValueProperty extends FlowFileProcessor {
+public class CreateValueProperty extends PropertyProcessor {
   
   public static final PropertyDescriptor SUBJECT_ATTRIBUTE = new PropertyDescriptor
     .Builder().name("Subject Attribute")
@@ -81,6 +83,14 @@ public class CreateValueProperty extends FlowFileProcessor {
       .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
       .build();
 
+  public static final PropertyDescriptor PREVENT_DUPLICATION = new PropertyDescriptor
+      .Builder().name("Prevent duplication")
+      .description("Optional, default true. Do not create a property if it is " +
+          "already existing.")
+      .required(false)
+      .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
+      .build();
+
 
   @Override
   protected void init(final ProcessorInitializationContext context) {
@@ -94,6 +104,7 @@ public class CreateValueProperty extends FlowFileProcessor {
     descriptors.add(OBJECT_ATTRIBUTE);
     descriptors.add(OBJECT_STATIC);
     descriptors.add(IS_UPDATING);
+    descriptors.add(PREVENT_DUPLICATION);
     this.properties = Collections.unmodifiableList(descriptors);
     
 
@@ -105,12 +116,11 @@ public class CreateValueProperty extends FlowFileProcessor {
 
     final ProcessorLog log = this.getLogger();
 
-    super.onTrigger(context, session);
     Weaver weaver = getWeaver();
 
     FlowFile flowFile = session.get();
     if (flowFile == null) {
-      throw new RuntimeException("FlowFile is null");
+      return;
     }
 
     String id = idFromOptions(context, flowFile, true);
@@ -120,20 +130,74 @@ public class CreateValueProperty extends FlowFileProcessor {
     String predicate = valueFromOptions(context, flowFile, PREDICATE_ATTRIBUTE, PREDICATE_STATIC, null);
     String object = valueFromOptions(context, flowFile, OBJECT_ATTRIBUTE, OBJECT_STATIC, null);
 
+    if(subject.equals("") || object.equals("") || predicate.equals("")
+        || subject == null || object == null || predicate == null
+        || subject.contains(" ") || predicate.contains(" ")) {
+      //Write flowfile to error heap, and send it through the flow without any other processing
 
-    boolean isUpdating = !context.getProperty(IS_UPDATING).isSet() || context.getProperty(IS_UPDATING).asBoolean();
+      new FlowErrorCatcher(context, session, this.getIdentifier()).dump(flowFile);
 
-    if(subject == null || predicate == null || object == null) {
-      throw new RuntimeException("Either subject, predicate or object could not be interpreted!");
+      session.transfer(flowFile, ORIGINAL);
+      //log.warn("Subject ("+(subject.equals("") ? 'X' : "") + "), object ("+(object.equals("") ? 'X' : "") + "), or predicate ("+(predicate.equals("") ? 'X' : "") + ") was empty");
+      return;
     }
 
-    Entity individual = weaver.get(subject, new ReadPayload.Opts(1));
+    Entity individual;
+    try {
+      individual = weaver.get(subject, new ReadPayload.Opts(1));
+    }
+    catch (EntityNotFoundException ex){
+      throw new ProcessException("CreateValueProperty could not find subject ID " + subject);
 
-    Map<String, ShallowEntity> relations = new HashMap<>();
+    }
+
+
+    boolean isUpdating = !context.getProperty(IS_UPDATING).isSet() || context.getProperty(IS_UPDATING).asBoolean();
+    boolean preventDuplication =  !context.getProperty(PREVENT_DUPLICATION).isSet() || context.getProperty(PREVENT_DUPLICATION).asBoolean();
+    
+    if(preventDuplication || isUpdating) {
+      
+      Map<String,Entity> existingProperties = getProperty(weaver, individual, predicate);
+      
+      if(existingProperties != null) {
+
+        boolean exactSameObject = existingProperties.containsKey(object);
+        
+        if(!exactSameObject) {
+          createNewProperty(weaver,individual, id, predicate, object, source);
+        }
+      }
+      else {
+        String propertyHash = individual.getId()+predicate+object+source;
+        try {
+          if(!LockRegistry.request("created", propertyHash)) {
+            createNewProperty(weaver, individual, id, predicate, object, source);
+            LockRegistry.release("created", propertyHash);
+          }
+        } catch (InterruptedException e) {
+          throw new ProcessException(e);
+        }
+      }
+    }
+    else {
+      createNewProperty(weaver,individual, id, predicate, object, source);
+    }
+    
+
+    if(context.getProperty(ATTRIBUTE_NAME_FOR_ID).isSet()) {
+      String attributeNameForId = context.getProperty(ATTRIBUTE_NAME_FOR_ID).getValue();
+      flowFile = session.putAttribute(flowFile, attributeNameForId, id);
+    }
+    session.transfer(flowFile, ORIGINAL);
+  }
+
+  
+  private void createNewProperty(Weaver weaver, Entity individual, String id, String predicate, String object, String source) {
+    ConcurrentMap<String, ShallowEntity> relations = new ConcurrentHashMap<>();
     relations.put("subject", individual.toShallowEntity());
+    relations.put("predicate", new ShallowEntity(predicate, "$PREDICATE"));
 
-    Map<String, String> entityAttributes = new HashMap<>();
-    entityAttributes.put("predicate", predicate);
+    ConcurrentMap<String, String> entityAttributes = new ConcurrentHashMap<>();
     entityAttributes.put("object", object);
     entityAttributes.put("source", source);
 
@@ -142,11 +206,5 @@ public class CreateValueProperty extends FlowFileProcessor {
 
     Entity propertiesEntity = weaver.get(properties.getId());
     propertiesEntity.linkEntity(valueProperty.getId(), valueProperty.toShallowEntity());
-
-    if(context.getProperty(ATTRIBUTE_NAME_FOR_ID).isSet()) {
-      String attributeNameForId = context.getProperty(ATTRIBUTE_NAME_FOR_ID).getValue();
-      flowFile = session.putAttribute(flowFile, attributeNameForId, id);
-    }
-    session.transfer(flowFile, ORIGINAL);
   }
 }

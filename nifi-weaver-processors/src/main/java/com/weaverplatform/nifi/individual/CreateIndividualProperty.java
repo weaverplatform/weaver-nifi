@@ -1,5 +1,6 @@
 package com.weaverplatform.nifi.individual;
 
+import com.weaverplatform.nifi.util.LockRegistry;
 import com.weaverplatform.sdk.*;
 import com.weaverplatform.sdk.json.request.ReadPayload;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
@@ -17,10 +18,13 @@ import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Tags({"weaver, create, individualproperty"})
@@ -28,7 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @SeeAlso({})
 @ReadsAttributes({@ReadsAttribute(attribute="", description="")})
 @WritesAttributes({@WritesAttribute(attribute="", description="")})
-public class CreateIndividualProperty extends FlowFileProcessor {
+public class CreateIndividualProperty extends PropertyProcessor {
 
   public static final PropertyDescriptor SUBJECT_ATTRIBUTE = new PropertyDescriptor
     .Builder().name("Subject Attribute")
@@ -90,6 +94,16 @@ public class CreateIndividualProperty extends FlowFileProcessor {
       .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
       .build();
 
+  public static final PropertyDescriptor PREVENT_DUPLICATION = new PropertyDescriptor
+      .Builder().name("Prevent duplication")
+      .description("Optional, default true. Do not create a property if it is " +
+          "already existing.")
+      .required(false)
+      .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
+      .build();
+  
+  public static final Logger logger = LoggerFactory.getLogger(CreateIndividualProperty.class);
+  
   @Override
   protected void init(final ProcessorInitializationContext context) {
 
@@ -103,6 +117,7 @@ public class CreateIndividualProperty extends FlowFileProcessor {
     descriptors.add(OBJECT_STATIC);
     descriptors.add(IS_ADDIFYING);
     descriptors.add(IS_UPDATING);
+    descriptors.add(PREVENT_DUPLICATION);
     this.properties = Collections.unmodifiableList(descriptors);
 
 
@@ -113,12 +128,11 @@ public class CreateIndividualProperty extends FlowFileProcessor {
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
     final ProcessorLog log = this.getLogger();
 
-    super.onTrigger(context, session);
     Weaver weaver = getWeaver();
 
     FlowFile flowFile = session.get();
     if (flowFile == null) {
-      throw new RuntimeException("FlowFile is null");
+      return;
     }
 
     String id = idFromOptions(context, flowFile, true);
@@ -128,80 +142,96 @@ public class CreateIndividualProperty extends FlowFileProcessor {
     String predicate = valueFromOptions(context, flowFile, PREDICATE_ATTRIBUTE, PREDICATE_STATIC, null);
     String objectId = valueFromOptions(context, flowFile, OBJECT_ATTRIBUTE, OBJECT_STATIC, null);
 
+    if(subjectId.equals("") || objectId.equals("") || predicate.equals("")
+        || subjectId == null || objectId == null || predicate == null
+        || subjectId.contains(" ") || objectId.contains(" ") || predicate.contains(" ")) {
+
+      //Write flowfile to error heap, and send it through the flow without any other processing
+      new FlowErrorCatcher(context, session, this.getIdentifier()).dump(flowFile);
+      //log.warn("Subject ("+(subjectId.equals("") ? 'X' : "") + "), object ("+(objectId.equals("") ? 'X' : "") + "), or predicate ("+(predicate.equals("") ? 'X' : "") + ") was empty");
+      session.transfer(flowFile, ORIGINAL);
+      return;
+    }
+
     // Should we be prepared for the possibility that this entity has already been created.
-    boolean isAddifying = !context.getProperty(IS_ADDIFYING).isSet() || context.getProperty(IS_ADDIFYING).asBoolean();
-    boolean isUpdating =  !context.getProperty(IS_UPDATING).isSet()  || context.getProperty(IS_UPDATING).asBoolean();
+    boolean isAddifying =         !context.getProperty(IS_ADDIFYING).isSet() || context.getProperty(IS_ADDIFYING).asBoolean();
+    boolean isUpdating =          !context.getProperty(IS_UPDATING).isSet()  || context.getProperty(IS_UPDATING).asBoolean();
+//    boolean preventDuplication =  !context.getProperty(PREVENT_DUPLICATION).isSet()  || context.getProperty(PREVENT_DUPLICATION).asBoolean();
+    boolean preventDuplication = true;
 
     // Create without checking for entities prior existence
+    Entity subjectEntity, objectEntity;
+    boolean createdSubject = false;
     if(!isAddifying) {
-
       // Get the parent object from weaver
-      Entity subjectEntity = weaver.get(subjectId, new ReadPayload.Opts(1));
+      subjectEntity = weaver.get(subjectId, new ReadPayload.Opts(1));
 
       // Find the object
-      Entity objectEntity = weaver.get(objectId, new ReadPayload.Opts(0));
-
-      Map<String, String> entityAttributes = new HashMap<>();
-      entityAttributes.put("predicate", predicate);
-      entityAttributes.put("source", source);
-
-      Map<String, ShallowEntity> relations = new HashMap<>();
-      relations.put("subject", subjectEntity.toShallowEntity());
-      relations.put("object", objectEntity.toShallowEntity());
-
-      Entity individualProperty = weaver.add(entityAttributes, EntityType.INDIVIDUAL_PROPERTY, id, relations);
-
-      // Fetch parent collection
-      ShallowEntity shallowCollection = subjectEntity.getRelations().get("properties");
-      Entity entityProperties = weaver.get(shallowCollection.getId(), new ReadPayload.Opts(0));
-
-      // Link individual to collection
-      entityProperties.linkEntity(individualProperty.getId(), individualProperty.toShallowEntity());
-
-
-    
+      objectEntity = weaver.get(objectId, new ReadPayload.Opts(0));
+      
+      
     } else {
-
       Entity datasetObjects = getDatasetObjects();
 
       // Get the parent object from weaver
-      Entity subjectEntity;
       try {
         subjectEntity = weaver.get(subjectId);
       } catch (EntityNotFoundException e) {
-        Map<String, String> attributes = new HashMap<>();
+        //logger.info("not found: " +subjectId);
+
+        createdSubject = true;
+        ConcurrentMap<String, String> attributes = new ConcurrentHashMap<>();
         attributes.put("source", source);
         subjectEntity = createIndividual(subjectId, attributes);
         datasetObjects.linkEntity(id, subjectEntity.toShallowEntity());
       }
 
       // Find the object
-      Entity objectEntity;
       try {
         objectEntity = weaver.get(objectId, new ReadPayload.Opts(0));
       } catch (EntityNotFoundException e) {
-        Map<String, String> attributes = new HashMap<>();
+        ConcurrentMap<String, String> attributes = new ConcurrentHashMap<>();
         attributes.put("source", source);
         objectEntity = createIndividual(objectId, attributes);
         datasetObjects.linkEntity(id, objectEntity.toShallowEntity());
       }
+    }
 
-      Map<String, String> entityAttributes = new HashMap<>();
-      entityAttributes.put("predicate", predicate);
-      entityAttributes.put("source", source);
+    if((preventDuplication || isUpdating) && !createdSubject) {
+      
+      Map<String,Entity> existingProperties = getProperty(weaver, subjectEntity, predicate);
 
-      Map<String, ShallowEntity> relations = new HashMap<>();
-      relations.put("subject", subjectEntity.toShallowEntity());
-      relations.put("object", objectEntity.toShallowEntity());
+      if (objectEntity.getId().equals("lib:Afsluitboom")){
+        //logger.info("subject: " +subjectEntity.getId());
+        //logger.info("predicate: " +predicate);
+        //logger.info("source: "    +source);
+      }
+      
+      if(existingProperties != null){
+        //logger.info("New: " + objectEntity.getId());
 
-      Entity individualProperty = weaver.add(entityAttributes, EntityType.INDIVIDUAL_PROPERTY, id, relations);
-
-      // Fetch parent collection
-      ShallowEntity shallowCollection = subjectEntity.getRelations().get("properties");
-      Entity entityProperties = weaver.get(shallowCollection.getId(), new ReadPayload.Opts(0));
-
-      // Link individual to collection
-      entityProperties.linkEntity(individualProperty.getId(), individualProperty.toShallowEntity());
+        boolean exactSameObject = existingProperties.containsKey(objectEntity.getId());
+        //logger.info("Same object: " + exactSameObject);
+        
+        if(!exactSameObject){
+          createNewProperty(weaver, id, subjectEntity, predicate, objectEntity, source);
+        } else {
+          //logger.info("THE SAME! not doing anything");
+        }
+      }
+      else {
+        String propertyHash = subjectEntity.getId()+predicate+objectEntity.getId()+source;
+        try {
+          if(!LockRegistry.request("created", propertyHash)) {
+            createNewProperty(weaver, id, subjectEntity, predicate, objectEntity, source);
+            LockRegistry.release("created", propertyHash);
+          }
+        } catch (InterruptedException e) {
+          throw new ProcessException(e);
+        }
+      }
+    } else {
+      createNewProperty(weaver, id, subjectEntity, predicate, objectEntity, source);
     }
 
     if (context.getProperty(ATTRIBUTE_NAME_FOR_ID).isSet()) {
@@ -223,7 +253,7 @@ public class CreateIndividualProperty extends FlowFileProcessor {
       .build();
   }
 
-  private Entity createIndividual(String id, Map<String, String> attributes) {
+  private Entity createIndividual(String id, ConcurrentMap<String, String> attributes) {
     Weaver weaver = getWeaver();
 
     Entity individual = weaver.add(attributes, EntityType.INDIVIDUAL, id);
@@ -235,5 +265,30 @@ public class CreateIndividualProperty extends FlowFileProcessor {
     individual.linkEntity("annotations", entityAnnotations.toShallowEntity());
 
     return individual;
+  }
+
+  private void createNewProperty(Weaver weaver, String id, Entity subjectEntity, String predicate, Entity objectEntity, String source) {
+    ConcurrentMap<String, String> entityAttributes = new ConcurrentHashMap<>();
+    entityAttributes.put("source", source);
+
+    ConcurrentMap<String, ShallowEntity> relations = new ConcurrentHashMap<>();
+    relations.put("subject", subjectEntity.toShallowEntity());
+    relations.put("object", objectEntity.toShallowEntity());
+    relations.put("predicate", new ShallowEntity(predicate, "$PREDICATE"));
+
+    Entity individualProperty = weaver.add(entityAttributes, EntityType.INDIVIDUAL_PROPERTY, id, relations);
+
+    // Fetch parent collection
+    try {
+      ShallowEntity shallowCollection = subjectEntity.getRelations().get("properties");
+      Entity entityProperties = weaver.get(shallowCollection.getId(), new ReadPayload.Opts(0));
+
+      // Link individual to collection
+      entityProperties.linkEntity(individualProperty.getId(), individualProperty.toShallowEntity());
+    }
+    catch(NullPointerException e){
+      throw new ProcessException("Subject entity has no properties, id is: " + subjectEntity.getId());
+    }
+
   }
 }

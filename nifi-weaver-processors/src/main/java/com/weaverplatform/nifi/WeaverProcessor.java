@@ -8,10 +8,14 @@ import com.weaverplatform.sdk.json.request.ReadPayload;
 import com.weaverplatform.sdk.model.Dataset;
 import com.weaverplatform.sdk.websocket.WeaverSocket;
 import org.apache.nifi.components.PropertyDescriptor;
-import org.apache.nifi.processor.*;
+import org.apache.nifi.processor.AbstractProcessor;
+import org.apache.nifi.processor.ProcessorInitializationContext;
+import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 import org.apache.nifi.util.NiFiProperties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -38,6 +42,8 @@ public abstract class WeaverProcessor extends AbstractProcessor {
   private static Entity datasetObjects = null;
   private static Entity datasetViews = null;
 
+  public static final Logger logger = LoggerFactory.getLogger(WeaverProcessor.class);
+  
   public static final PropertyDescriptor WEAVER = new PropertyDescriptor
       .Builder().name("Weaver URL")
       .description("Weaver connection URL i.e. weaver.connect(url).")
@@ -51,12 +57,12 @@ public abstract class WeaverProcessor extends AbstractProcessor {
     descriptors.add(WEAVER);
   }
   
-  public Weaver getWeaver() {
+  public static synchronized Weaver getWeaver() {
     if(weaverUrl == null) {
       weaverUrl = NiFiProperties.getInstance().get(WeaverProperties.URL).toString();
     }
     if(weaver == null) {
-      weaver = new Weaver();
+      weaver = new Weaver("ins:");
       try {
         weaver.connect(new WeaverSocket(new URI(weaverUrl)));
       } catch (URISyntaxException e) {
@@ -66,7 +72,7 @@ public abstract class WeaverProcessor extends AbstractProcessor {
     return weaver;
   }
 
-  public Entity getDatasetObjects() {
+  public static synchronized Entity getDatasetObjects() {
 
     if(datasetObjects != null) {
       return datasetObjects;
@@ -77,10 +83,10 @@ public abstract class WeaverProcessor extends AbstractProcessor {
     if(dataset == null) {
       String datasetId = NiFiProperties.getInstance().get(WeaverProperties.DATASET).toString();
       try {
+        logger.info("Getting dataset " + datasetId);
         dataset = weaver.get(datasetId, new ReadPayload.Opts(1));
       } catch(EntityNotFoundException e) {
-        new Dataset(weaver, datasetId).get(datasetId);
-        dataset = weaver.get(datasetId);
+        dataset = new Dataset(weaver, datasetId).get(datasetId);
       }
     }
 
@@ -91,7 +97,7 @@ public abstract class WeaverProcessor extends AbstractProcessor {
     return datasetObjects;
   }
 
-  public Entity getDatasetViews() {
+  public static synchronized Entity getDatasetViews() {
 
     if(datasetObjects != null) {
       return datasetObjects;
@@ -114,9 +120,6 @@ public abstract class WeaverProcessor extends AbstractProcessor {
     }
 
     return datasetObjects;
-  }
-
-  public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
   }
 
   @Override

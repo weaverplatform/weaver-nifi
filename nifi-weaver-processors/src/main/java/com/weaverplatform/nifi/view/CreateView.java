@@ -23,6 +23,8 @@ import org.apache.nifi.processor.util.StandardValidators;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Tags({"weaver, create, view"})
@@ -62,7 +64,6 @@ public class CreateView extends FlowFileProcessor {
   @Override
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
     
-    super.onTrigger(context, session);
     Weaver weaver = getWeaver();
 
     datasetViews = getDatasetViews();
@@ -70,13 +71,13 @@ public class CreateView extends FlowFileProcessor {
     ProcessorLog log  = this.getLogger();
     FlowFile flowFile = session.get();
     if (flowFile == null) {
-      throw new RuntimeException("FlowFile is null");
+      return;
     }
     
     String id = idFromOptions(context, flowFile, true);
 
     // Prepare view attributes with name
-    Map<String, String> attributes = new HashMap<>();
+    ConcurrentMap<String, String> attributes = new ConcurrentHashMap<>();
     String name = valueFromOptions(context, flowFile, NAME_ATTRIBUTE, NAME_STATIC, "Unnamed");
     attributes.put("name", name);
 

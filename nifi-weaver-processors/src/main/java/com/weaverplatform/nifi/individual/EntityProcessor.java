@@ -4,7 +4,6 @@ import com.weaverplatform.nifi.WeaverProcessor;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessContext;
-import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
@@ -66,13 +65,7 @@ public abstract class EntityProcessor extends WeaverProcessor {
 
   }
 
-  @Override
-  public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
-    
-    super.onTrigger(context, session);
 
-  }     
-  
   public String getSource(ProcessContext context, FlowFile flowFile) {
     return valueFromOptions(context, flowFile, SOURCE_ATTRIBUTE, SOURCE_STATIC, "unset");
   }

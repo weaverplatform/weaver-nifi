@@ -20,8 +20,8 @@ import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Tags({"weaver, create, individual"})
@@ -61,6 +61,15 @@ public class CreateIndividual extends FlowFileProcessor {
       .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
       .build();
 
+  public static final PropertyDescriptor DO_NOT_CHECK_EXISTENCE = new PropertyDescriptor
+    .Builder().name("Do not check existence")
+    .description("")
+    .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
+    .required(false)
+    .allowableValues(new String[]{"true", "false"})
+    .defaultValue("false")
+    .build();
+
   public static final PropertyDescriptor IS_UPDATING = new PropertyDescriptor
       .Builder().name("Updating")
       .description("Optional, default true. If is true it will check if the " +
@@ -83,6 +92,7 @@ public class CreateIndividual extends FlowFileProcessor {
     descriptors.add(NAME_STATIC);
     descriptors.add(IS_ADDIFYING);
     descriptors.add(IS_UPDATING);
+    descriptors.add(DO_NOT_CHECK_EXISTENCE);
     this.properties = Collections.unmodifiableList(descriptors);
     this.relationships = new AtomicReference<>(relationshipSet);
   }
@@ -91,12 +101,11 @@ public class CreateIndividual extends FlowFileProcessor {
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
     final ProcessorLog log = this.getLogger();
     
-    super.onTrigger(context, session);
     Weaver weaver = getWeaver();
 
     FlowFile flowFile = session.get();
     if (flowFile == null) {
-      throw new RuntimeException("FlowFile is null");
+      return;
     }
 
     Entity datasetObjects = getDatasetObjects();
@@ -105,14 +114,24 @@ public class CreateIndividual extends FlowFileProcessor {
     String name = getName(context, flowFile);
     String source = getSource(context, flowFile);
 
+    if(id.equals("") || id.contains(" ") || id == null) {
+
+      //Write flowfile to error heap, and send it through the flow without any other processing
+      new FlowErrorCatcher(context, session, this.getIdentifier()).dump(flowFile);
+      //log.warn("Subject ("+(subjectId.equals("") ? 'X' : "") + "), object ("+(objectId.equals("") ? 'X' : "") + "), or predicate ("+(predicate.equals("") ? 'X' : "") + ") was empty");
+      session.transfer(flowFile, ORIGINAL);
+      return;
+    }
+
     // Should we be prepared for the possibility that this entity has already been created.
     boolean isAddifying = !context.getProperty(IS_ADDIFYING).isSet() || context.getProperty(IS_ADDIFYING).asBoolean();
+    boolean doNotCheckExistence = context.getProperty(DO_NOT_CHECK_EXISTENCE).asBoolean();
     boolean isUpdating =  !context.getProperty(IS_UPDATING).isSet()  || context.getProperty(IS_UPDATING).asBoolean();
 
     // Create without checking for entities prior existence
-    if(!isAddifying) {
+    if(doNotCheckExistence) {
 
-      Map<String, String> attributes = new HashMap<>();
+      ConcurrentMap<String, String> attributes = new ConcurrentHashMap<>();
       attributes.put("name", name);
       attributes.put("source", source);
 
@@ -121,7 +140,7 @@ public class CreateIndividual extends FlowFileProcessor {
       // Attach to dataset
       datasetObjects.linkEntity(id, individual.toShallowEntity());
 
-    // Check to see whether it exists before creation
+      // Check to see whether it exists before creation
     } else {
 
       try {
@@ -136,7 +155,7 @@ public class CreateIndividual extends FlowFileProcessor {
         }
       } catch(EntityNotFoundException e) {
 
-        Map<String, String> attributes = new HashMap<>();
+        ConcurrentMap<String, String> attributes = new ConcurrentHashMap<>();
         attributes.put("name", name);
         attributes.put("source", source);
 
@@ -153,7 +172,7 @@ public class CreateIndividual extends FlowFileProcessor {
     session.transfer(flowFile, ORIGINAL);
   }
 
-  private void createIndividual(String id, Map<String, String> attributes) {
+  private void createIndividual(String id, ConcurrentMap<String, String> attributes) {
     Weaver weaver = getWeaver();
 
     individual = weaver.add(attributes, EntityType.INDIVIDUAL, id);

@@ -27,6 +27,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class CreateValuePropertyTest {
 
@@ -78,7 +79,7 @@ public class CreateValuePropertyTest {
   @Test
   public void testOnTrigger() {
 
-    HashMap<String, String> subjectAttributes = new HashMap<>();
+    ConcurrentHashMap<String, String> subjectAttributes = new ConcurrentHashMap<>();
     subjectAttributes.put("name", "subjectThing");
     Entity subjectEntity = weaver.add(subjectAttributes, EntityType.INDIVIDUAL, "816ee370-4274-e211-a3a8-b8ac6f902f00");
     subjectEntity.linkEntity("properties", weaver.collection().toShallowEntity());

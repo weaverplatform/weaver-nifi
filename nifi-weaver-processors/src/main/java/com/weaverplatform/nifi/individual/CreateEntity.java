@@ -21,6 +21,8 @@ import org.apache.nifi.processor.util.StandardValidators;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Tags({"weaver, create, entity"})
@@ -84,18 +86,17 @@ public class CreateEntity extends FlowFileProcessor {
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
     final ProcessorLog log = this.getLogger();
 
-    super.onTrigger(context, session);
     Weaver weaver = getWeaver();
 
     FlowFile flowFile = session.get();
     if (flowFile == null) {
-      throw new RuntimeException("FlowFile is null");
+      return;
     }
 
     String id = idFromOptions(context, flowFile, true);
 
     // Create entity by user attribute
-    Map<String, String> attributes = new HashMap<>();
+    ConcurrentMap<String, String> attributes = new ConcurrentHashMap<>();
     String name = valueFromOptions(context, flowFile, NAME_ATTRIBUTE, NAME_STATIC, "Unnamed");
     if(context.getProperty(NAME_PREFIX).isSet()) {
       name = context.getProperty(NAME_PREFIX).getValue() + name;

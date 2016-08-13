@@ -25,6 +25,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import static org.junit.Assert.*;
 
@@ -70,7 +72,7 @@ public class CreateFilterTest {
     dataset = new Dataset(weaver, WEAVER_DATASET).get(WEAVER_DATASET);
     
     // Create view
-    Map<String, String> viewAttributes = new HashMap<>();
+    ConcurrentMap<String, String> viewAttributes = new ConcurrentHashMap<>();
     viewAttributes.put("name", "View");
     view = weaver.add(viewAttributes, EntityType.VIEW);
 

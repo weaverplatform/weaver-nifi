@@ -22,6 +22,8 @@ import org.apache.nifi.processor.util.StandardValidators;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Tags({"weaver, create, view, filter, condition"})
@@ -83,12 +85,11 @@ public class CreateFilterCondition extends FlowFileProcessor {
   @Override
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
     
-    super.onTrigger(context, session);
     Weaver weaver = getWeaver();
 
     FlowFile flowFile = session.get();
     if (flowFile == null) {
-      throw new RuntimeException("FlowFile is null");
+      return;
     }
     
     // Get the Filter entity by ID
@@ -101,7 +102,7 @@ public class CreateFilterCondition extends FlowFileProcessor {
     String conditionType = context.getProperty(CONDITION_TYPE_STATIC).getValue();
 
     // Prepare condition attributes
-    Map<String, String> attributes = new HashMap<>();
+    ConcurrentMap<String, String> attributes = new ConcurrentHashMap<>();
     attributes.put("conditiontype", conditionType);
     attributes.put("operation", context.getProperty(OPERATION_STATIC).getValue());
 
