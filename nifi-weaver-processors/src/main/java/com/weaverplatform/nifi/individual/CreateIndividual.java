@@ -1,6 +1,5 @@
 package com.weaverplatform.nifi.individual;
 
-import com.weaverplatform.nifi.util.LockRegistry;
 import com.weaverplatform.sdk.*;
 import com.weaverplatform.sdk.json.request.ReadPayload;
 import com.weaverplatform.sdk.json.request.UpdateEntityAttribute;
@@ -21,8 +20,6 @@ import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -64,6 +61,15 @@ public class CreateIndividual extends FlowFileProcessor {
       .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
       .build();
 
+  public static final PropertyDescriptor DO_NOT_CHECK_EXISTENCE = new PropertyDescriptor
+    .Builder().name("Do not check existence")
+    .description("")
+    .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
+    .required(false)
+    .allowableValues(new String[]{"true", "false"})
+    .defaultValue("false")
+    .build();
+
   public static final PropertyDescriptor IS_UPDATING = new PropertyDescriptor
       .Builder().name("Updating")
       .description("Optional, default true. If is true it will check if the " +
@@ -86,6 +92,7 @@ public class CreateIndividual extends FlowFileProcessor {
     descriptors.add(NAME_STATIC);
     descriptors.add(IS_ADDIFYING);
     descriptors.add(IS_UPDATING);
+    descriptors.add(DO_NOT_CHECK_EXISTENCE);
     this.properties = Collections.unmodifiableList(descriptors);
     this.relationships = new AtomicReference<>(relationshipSet);
   }
@@ -117,12 +124,12 @@ public class CreateIndividual extends FlowFileProcessor {
     }
 
     // Should we be prepared for the possibility that this entity has already been created.
-    //boolean isAddifying = !context.getProperty(IS_ADDIFYING).isSet() || context.getProperty(IS_ADDIFYING).asBoolean();
-    boolean isAddifying = true;
+    boolean isAddifying = !context.getProperty(IS_ADDIFYING).isSet() || context.getProperty(IS_ADDIFYING).asBoolean();
+    boolean doNotCheckExistence = context.getProperty(DO_NOT_CHECK_EXISTENCE).asBoolean();
     boolean isUpdating =  !context.getProperty(IS_UPDATING).isSet()  || context.getProperty(IS_UPDATING).asBoolean();
 
     // Create without checking for entities prior existence
-    if(false) {
+    if(doNotCheckExistence) {
 
       ConcurrentMap<String, String> attributes = new ConcurrentHashMap<>();
       attributes.put("name", name);
