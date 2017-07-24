@@ -21,6 +21,7 @@ com.weaverplatform.nifi.individual.IndividualExists
 com.weaverplatform.nifi.individual.PropertyExists
 com.weaverplatform.nifi.individual.WipeProcessor
 com.weaverplatform.nifi.individual.XmiImporter
+com.weaverplatform.nifi.individual.NativeQuery
 com.weaverplatform.nifi.view.CreateView
 com.weaverplatform.nifi.view.CreateFilter
 com.weaverplatform.nifi.view.CreateFilterCondition
