@@ -1,0 +1,39 @@
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  xsd:  <http://www.w3.org/2001/XMLSchema#>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX  lib:  <http://ccy.information-backbone.org/library#>
+PREFIX  ins:  <http://ccy.information-backbone.org/instance#>
+
+SELECT
+    xsd:integer(?Mslink)  as ?Mslink
+    str(?Subtrace)        as ?Subtrace
+    str(?TypeOnderdeel)   as ?TypeOnderdeel
+    str(?sometypelabel)   as ?label
+    str(?somevalue)       as ?value
+
+WHERE {
+
+    ?measurement lib:partOf #{MEASUREMENT_ID} .
+
+    ?hmv lib:hasMeasurement ?measurement .
+
+    ?hmv lib:isLocatedAt ?rijstrook .
+    ?rijstrook lib:hasName ?nameProp .
+    ?nameProp lib:hasValue ?TypeOnderdeel .
+    ?trace lib:consistsOf ?rijstrook .
+    ?trace rdf:type lib:Subtracedeel .
+    ?trace lib:hasName ?name .
+    ?name lib:hasValue ?Subtrace .
+
+    ?measurement ?r1 ?p1 .
+    ?p1 rdf:type lib:CodeHMV .
+    ?p1 lib:hasValue ?Mslink .
+
+    ?measurement ?r50 ?p50 .
+    ?p50 rdf:type ?sometype .
+    ?sometype rdfs:label ?sometypelabel .
+    ?p50 lib:hasValue ?somevalue .
+
+    FILTER(?sometypelabel != rdfs:Class) .
+    FILTER(?sometype != lib:CodeHMV) .
+} ORDER BY ?Mslink
