@@ -149,7 +149,10 @@ public class MeasurementsToCSV extends WeaverProcessor {
 
             for (String header : headers) {
                 if (measurement.containsKey(header)){
-                    csv += measurement.get(header) + ";";
+
+                    // Remove blank
+                    String value = measurement.get(header).toString().replace("BLANK", "");
+                    csv += value + ";";
                 }
                 else {
                     csv += ";";

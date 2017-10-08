@@ -15,15 +15,16 @@ WHERE {
 
     ?measurement lib:partOf #{MEASUREMENT_ID} .
 
-    ?hmv lib:hasMeasurement ?measurement .
-
-    ?hmv lib:isLocatedAt ?rijstrook .
-    ?rijstrook lib:hasName ?nameProp .
-    ?nameProp lib:hasValue ?TypeOnderdeel .
-    ?trace lib:consistsOf ?rijstrook .
-    ?trace rdf:type lib:Subtracedeel .
-    ?trace lib:hasName ?name .
-    ?name lib:hasValue ?Subtrace .
+    OPTIONAL {
+        ?hmv lib:hasMeasurement ?measurement .
+        ?hmv lib:isLocatedAt ?rijstrook .
+        ?rijstrook lib:hasName ?nameProp .
+        ?nameProp lib:hasValue ?TypeOnderdeel .
+        ?trace lib:consistsOf ?rijstrook .
+        ?trace rdf:type lib:Subtracedeel .
+        ?trace lib:hasName ?name .
+        ?name lib:hasValue ?Subtrace .
+    }
 
     ?measurement ?r1 ?p1 .
     ?p1 rdf:type lib:CodeHMV .
