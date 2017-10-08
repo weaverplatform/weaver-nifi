@@ -97,6 +97,12 @@ public class MeasurementsToCSV extends WeaverProcessor {
         // Save measurements here
         Map<String, Map<String, String>> measurements = new LinkedHashMap<>();
 
+        // Save all used keys here as headers
+        Set<String> headers = new LinkedHashSet<>();
+        headers.add("Mslink");
+        headers.add("SubTrace");
+        headers.add("TypeOnderdeel");
+
         // Execute query
         ArrayList<ArrayList<String>> result = weaver.channel.nativeQuery(new com.weaverplatform.sdk.json.request.NativeQuery(query, new ArrayList<>()));
 
@@ -117,28 +123,41 @@ public class MeasurementsToCSV extends WeaverProcessor {
             m.put("Mslink", mslink);
             m.put("SubTrace", subtrace);
             m.put("TypeOnderdeel", typeonderdeel);
-            m.put(label.replace("lib:",""), value);
+
+            String propertyKey = label.replace("lib:","");
+            m.put(propertyKey, value);
+
+            // Save key for future reference to fill empty cells
+            headers.add(propertyKey);
         }
+
 
         // Convert to array
         List<Map<String, String>> measurementsList = new ArrayList<>(measurements.values());
 
-        // Write CSV
+        // Write CSV headers
         String csv = "";
-        if (!measurementsList.isEmpty()) {
-            for (String key : measurementsList.get(0).keySet()) {
-                csv += key + ";";
+        for (String header : headers) {
+            csv += header + ";";
+        }
+
+        csv = csv.substring(0, csv.length() - 1); // remove last separator
+        csv += "\n";
+
+        // Write CSV content
+        for (Map measurement : measurementsList) {
+
+            for (String header : headers) {
+                if (measurement.containsKey(header)){
+                    csv += measurement.get(header) + ";";
+                }
+                else {
+                    csv += ";";
+                }
             }
+
             csv = csv.substring(0, csv.length() - 1); // remove last separator
             csv += "\n";
-
-            for (Map measurement : measurementsList) {
-                for (Object key : measurement.keySet()) {
-                    csv += measurement.get(key) + ";";
-                }
-                csv = csv.substring(0, csv.length() - 1); // remove last separator
-                csv += "\n";
-            }
         }
 
         InputStream in = new ByteArrayInputStream(csv.getBytes(StandardCharsets.UTF_8));
