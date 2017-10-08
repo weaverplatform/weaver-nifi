@@ -25,3 +25,4 @@ com.weaverplatform.nifi.individual.NativeQuery
 com.weaverplatform.nifi.view.CreateView
 com.weaverplatform.nifi.view.CreateFilter
 com.weaverplatform.nifi.view.CreateFilterCondition
+com.weaverplatform.nifi.dedicated.MeasurementsToCSV
