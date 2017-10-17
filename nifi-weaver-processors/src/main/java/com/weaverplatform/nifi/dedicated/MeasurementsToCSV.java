@@ -100,8 +100,6 @@ public class MeasurementsToCSV extends WeaverProcessor {
         // Save all used keys here as headers
         Set<String> headers = new LinkedHashSet<>();
         headers.add("Mslink");
-        headers.add("SubTrace");
-        headers.add("TypeOnderdeel");
 
         // Execute query
         ArrayList<ArrayList<String>> result = weaver.channel.nativeQuery(new com.weaverplatform.sdk.json.request.NativeQuery(query, new ArrayList<>()));
@@ -109,11 +107,9 @@ public class MeasurementsToCSV extends WeaverProcessor {
         // Process results
         for(ArrayList<String> row : result) {
 
-            String mslink        = row.get(0);
-            String subtrace      = row.get(1);
-            String typeonderdeel = row.get(2);
-            String label         = row.get(3);
-            String value         = row.get(4);
+            String mslink = row.get(0);
+            String label  = row.get(1);
+            String value  = row.get(2);
 
             if(!measurements.containsKey(mslink)){
                 measurements.put(mslink, new LinkedHashMap<>());
@@ -121,8 +117,6 @@ public class MeasurementsToCSV extends WeaverProcessor {
 
             Map m = measurements.get(mslink);
             m.put("Mslink", mslink);
-            m.put("SubTrace", subtrace);
-            m.put("TypeOnderdeel", typeonderdeel);
 
             String propertyKey = label.replace("lib:","");
             m.put(propertyKey, value);
