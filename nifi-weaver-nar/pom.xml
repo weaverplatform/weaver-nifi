@@ -7,11 +7,11 @@
     <parent>
         <groupId>com.weaverplatform.nifi</groupId>
         <artifactId>weaver-nifi</artifactId>
-        <version>1.2.3</version>
+        <version>1.2.5</version>
     </parent>
 
     <artifactId>nifi-weaver-nar</artifactId>
-    <version>1.2.3</version>
+    <version>1.2.5</version>
     <packaging>nar</packaging>
     <properties>
         <maven.javadoc.skip>true</maven.javadoc.skip>
@@ -22,7 +22,7 @@
         <dependency>
             <groupId>com.weaverplatform.nifi</groupId>
             <artifactId>nifi-weaver-processors</artifactId>
-            <version>1.2.3</version>
+            <version>1.2.5</version>
         </dependency>
         <dependency>
             <groupId>org.apache.nifi</groupId>
