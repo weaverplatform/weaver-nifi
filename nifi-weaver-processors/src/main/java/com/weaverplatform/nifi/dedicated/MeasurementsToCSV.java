@@ -97,10 +97,6 @@ public class MeasurementsToCSV extends WeaverProcessor {
         // Save measurements here
         Map<String, Map<String, String>> measurements = new LinkedHashMap<>();
 
-        // Save all used keys here as headers
-        Set<String> headers = new LinkedHashSet<>();
-        headers.add("Mslink");
-
         // Execute query
         ArrayList<ArrayList<String>> result = weaver.channel.nativeQuery(new com.weaverplatform.sdk.json.request.NativeQuery(query, new ArrayList<>()));
 
@@ -120,18 +116,46 @@ public class MeasurementsToCSV extends WeaverProcessor {
 
             String propertyKey = label.replace("lib:","");
             m.put(propertyKey, value);
-
-            // Save key for future reference to fill empty cells
-            headers.add(propertyKey);
         }
 
+        // Header name mapping and order
+        Map<String, String> mappedHeaders = new LinkedHashMap<>();
+        mappedHeaders.put("Mslink","Mslink");
+        mappedHeaders.put("Subtracé","Subtrace");
+        mappedHeaders.put("Vaknummer","NummerHMV");
+        mappedHeaders.put("Afstandvan","Afstandvan");
+        mappedHeaders.put("Afstandtot","Afstandtot");
+        mappedHeaders.put("Omschrijvingvan","Omschrijvingvan");
+        mappedHeaders.put("Omschrijvingtot","Omschrijvingtot");
+        mappedHeaders.put("Type onderdeel","TypeOnderdeel");
+        mappedHeaders.put("Verharding","TypeVerharding");
+        mappedHeaders.put("Situering","SitueringBPS");
+        mappedHeaders.put("Lengte","LengteHMV");
+        mappedHeaders.put("Oppervlakte","OppervlakteHMV");
+        mappedHeaders.put("Datum spoorvorming","DatumMetingSpoorvorming");
+        mappedHeaders.put("Spoorvorming links","ResultaatSpoorvormingLinks");
+        mappedHeaders.put("Spoorvorming rechts","ResultaatSpoorvormingRechts");
+        mappedHeaders.put("Datum langsonvlakheid","DatumMetingLangsonvlakheid");
+        mappedHeaders.put("Langsonvlakheid","ResultaatLangsonvlakheid");
+        mappedHeaders.put("Datum stroefheid","DatumMetingStroefheid");
+        mappedHeaders.put("Stroefheid","ResultaatStroefheid");
+        mappedHeaders.put("Stroefheid_deklaagtype","DeklaagTypeStroefheid");
+        mappedHeaders.put("Stroefheid_meetsnelheid","MeetsnelheidStroefheid");
+        mappedHeaders.put("Datum dwarshelling","DatumMetingDwarshelling");
+        mappedHeaders.put("Dwarshelling","ResultaatDwarshelling");
+        mappedHeaders.put("Datum langsonvlakheid overgang","DatumMetingLangsonvlakheid_overgang");
+        mappedHeaders.put("Langsonvlakheid overgang","ResultaatLangsonvlakheid_overgang");
+        mappedHeaders.put("Inspectiedatum","DatumInspectie");
+        mappedHeaders.put("Langscheuren/Craquelé","BeoordelingLangsscheuren");
+        mappedHeaders.put("Dwarsscheuren","BeoordelingDwarsscheuren");
+        mappedHeaders.put("Rafeling","BeoordelingRafeling");
 
         // Convert to array
         List<Map<String, String>> measurementsList = new ArrayList<>(measurements.values());
 
         // Write CSV headers
         String csv = "";
-        for (String header : headers) {
+        for (String header : mappedHeaders.keySet()) {
             csv += header + ";";
         }
 
@@ -141,11 +165,11 @@ public class MeasurementsToCSV extends WeaverProcessor {
         // Write CSV content
         for (Map measurement : measurementsList) {
 
-            for (String header : headers) {
-                if (measurement.containsKey(header)){
+            for (String header : mappedHeaders.keySet()) {
+                if (measurement.containsKey(mappedHeaders.get(header))){
 
                     // Remove blank
-                    String value = measurement.get(header).toString().replace("BLANK", "");
+                    String value = measurement.get(mappedHeaders.get(header)).toString().replace("BLANK", "");
                     csv += value + ";";
                 }
                 else {
